@@ -1,0 +1,7220 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>四界 · 长篇小说 Agent 记忆大屏</title>
+<style>
+  :root{
+    --bg:#080b12; --bg2:#0d1220; --panel:#111827; --panel2:#151d2e;
+    --line:#1e293b; --line2:#2a3a52;
+    --txt:#cbd5e1; --txt2:#94a3b8; --dim:#64748b;
+    --cyan:#22d3ee; --blue:#3b82f6; --violet:#a78bfa;
+    --amber:#fbbf24; --rose:#fb7185; --emerald:#34d399;
+    --human:#34d399; --realm1:#60a5fa; --realm2:#a78bfa;
+    --realm3:#fbbf24; --realm4:#fb7185;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    background:var(--bg); color:var(--txt);
+    font-family:-apple-system,"Segoe UI","Microsoft YaHei",sans-serif;
+    font-size:13px; line-height:1.55; overflow-x:hidden;
+  }
+  .wrap{max-width:1680px;margin:0 auto;padding:18px 22px 60px}
+
+  /* ---------- 头部 ---------- */
+  header{
+    display:flex;align-items:flex-end;justify-content:space-between;
+    gap:20px;padding-bottom:16px;margin-bottom:18px;
+    border-bottom:1px solid var(--line);flex-wrap:wrap;
+  }
+  h1{font-size:20px;font-weight:600;letter-spacing:.5px;color:#e2e8f0}
+  h1 span{color:var(--cyan)}
+  .sub{color:var(--dim);font-size:12px;margin-top:3px}
+  .kpis{display:flex;gap:26px;flex-wrap:wrap}
+  .kpi{text-align:right}
+  .kpi .v{font-size:21px;font-weight:600;color:var(--cyan);
+    font-variant-numeric:tabular-nums;line-height:1.1}
+  .kpi .l{font-size:10.5px;color:var(--dim);letter-spacing:.4px}
+
+  /* ---------- 布局 ---------- */
+  .grid{display:grid;gap:14px}
+  .g2{grid-template-columns:1fr 1fr}
+  .g3{grid-template-columns:repeat(3,1fr)}
+  .g-32{grid-template-columns:1.35fr 1fr}
+  @media(max-width:1100px){.g2,.g3,.g-32{grid-template-columns:1fr}}
+
+  .panel{
+    background:linear-gradient(180deg,var(--panel),var(--panel2));
+    border:1px solid var(--line);border-radius:10px;padding:15px 17px;
+    position:relative;overflow:hidden;
+  }
+  .panel::before{
+    content:'';position:absolute;top:0;left:0;right:0;height:1px;
+    background:linear-gradient(90deg,transparent,var(--line2),transparent);
+  }
+  .panel h2{
+    font-size:13px;font-weight:600;color:#e2e8f0;margin-bottom:3px;
+    display:flex;align-items:center;gap:8px;
+  }
+  .panel h2 .tag{
+    font-size:9.5px;font-weight:500;padding:1px 6px;border-radius:3px;
+    background:rgba(34,211,238,.12);color:var(--cyan);
+    letter-spacing:.3px;text-transform:uppercase;
+  }
+  .panel .note{font-size:11px;color:var(--dim);margin-bottom:12px}
+
+  /* ---------- 时间轴 ---------- */
+  .scrub{
+    display:flex;align-items:center;gap:14px;margin-bottom:16px;
+    background:var(--panel);border:1px solid var(--line);
+    border-radius:10px;padding:13px 18px;
+  }
+  .scrub label{font-size:11px;color:var(--dim);white-space:nowrap}
+  input[type=range]{
+    flex:1;-webkit-appearance:none;height:5px;border-radius:3px;
+    background:linear-gradient(90deg,var(--realm1),var(--realm2),var(--realm3),var(--realm4));
+    outline:none;cursor:pointer;
+  }
+  input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none;width:17px;height:17px;border-radius:50%;
+    background:#fff;border:3px solid var(--cyan);cursor:grab;
+    box-shadow:0 0 10px rgba(34,211,238,.6);
+  }
+  .scrub .val{
+    font-size:16px;font-weight:600;color:var(--cyan);
+    font-variant-numeric:tabular-nums;min-width:76px;text-align:right;
+  }
+  .scrub .rm{font-size:11.5px;color:var(--violet);min-width:130px}
+
+  /* ---------- 力量曲线 ---------- */
+  #powerChart{width:100%;height:190px;display:block}
+
+  /* ---------- 存储层卡片 ---------- */
+  .stores{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+  @media(max-width:1300px){.stores{grid-template-columns:repeat(2,1fr)}}
+  .store{
+    background:rgba(30,41,59,.45);border:1px solid var(--line);
+    border-radius:8px;padding:11px 12px;cursor:pointer;
+    transition:.18s;position:relative;
+  }
+  .store:hover{border-color:var(--cyan);background:rgba(34,211,238,.06)}
+  .store.active{border-color:var(--cyan);background:rgba(34,211,238,.1);
+    box-shadow:0 0 0 1px rgba(34,211,238,.3)}
+  .store .nm{font-size:12.5px;font-weight:600;color:#e2e8f0;
+    display:flex;align-items:center;justify-content:space-between;gap:6px}
+  .store .cnt{font-size:10px;color:var(--cyan);font-variant-numeric:tabular-nums}
+  .store .desc{font-size:10.5px;color:var(--dim);margin-top:4px;line-height:1.45}
+  .store .dot{width:6px;height:6px;border-radius:50%;display:inline-block;
+    margin-right:5px;vertical-align:middle}
+  .store .why{font-size:10px;color:var(--amber);margin-top:5px;
+    opacity:0;max-height:0;overflow:hidden;transition:.2s}
+  .store:hover .why,.store.active .why{opacity:1;max-height:40px}
+
+  /* ---------- 大纲 ---------- */
+  .ol-node{margin-bottom:7px;padding-left:11px;border-left:2px solid var(--line2)}
+  .ol-node.act{border-left-color:var(--rose)}
+  .ol-node.vol{border-left-color:var(--amber)}
+  .ol-node.arc{border-left-color:var(--violet)}
+  .ol-node.ch{border-left-color:var(--cyan)}
+  .ol-k{font-size:9.5px;color:var(--dim);text-transform:uppercase;letter-spacing:.4px}
+  .ol-v{font-size:11.5px;color:#e2e8f0;margin-top:1px}
+  .ol-d{font-size:10.5px;color:var(--txt2);margin-top:2px;line-height:1.5}
+  .ol-esc{font-size:10px;color:var(--amber);margin-top:2px}
+
+  .beat-item{display:flex;gap:8px;margin-bottom:7px;align-items:flex-start}
+  .beat-kind{font-size:9px;padding:1px 5px;border-radius:3px;white-space:nowrap;
+    margin-top:1px;font-weight:500}
+  .bk-冲突{background:rgba(251,113,133,.16);color:var(--rose)}
+  .bk-揭示{background:rgba(34,211,238,.16);color:var(--cyan)}
+  .bk-代价{background:rgba(251,191,36,.16);color:var(--amber)}
+  .bk-转折{background:rgba(167,139,250,.16);color:var(--violet)}
+  .beat-txt{font-size:11.5px;color:var(--txt);line-height:1.6}
+
+  .ch-meta{display:flex;gap:14px;flex-wrap:wrap;font-size:10.5px;
+    color:var(--dim);margin-bottom:10px;padding-bottom:9px;
+    border-bottom:1px solid var(--line)}
+  .ch-meta b{color:var(--cyan);font-weight:500}
+  .ch-end{margin-top:9px;padding:8px 10px;border-radius:6px;
+    background:rgba(52,211,153,.07);border:1px solid rgba(52,211,153,.22);
+    font-size:11px;color:var(--emerald)}
+
+  /* ---------- 人物 ---------- */
+  .cast-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:9px}
+  @media(max-width:1400px){.cast-grid{grid-template-columns:repeat(2,1fr)}}
+  .cast-card{
+    background:rgba(30,41,59,.4);border:1px solid var(--line);
+    border-radius:7px;padding:9px 10px;transition:.18s;
+  }
+  .cast-card.present{border-color:rgba(34,211,238,.55);
+    background:rgba(34,211,238,.07);box-shadow:0 0 0 1px rgba(34,211,238,.18)}
+  .cast-card.dead{opacity:.42}
+  .cast-card .hd{display:flex;align-items:baseline;justify-content:space-between;gap:6px}
+  .cast-card .nm{font-size:12.5px;font-weight:600;color:#e2e8f0}
+  .cast-card .rl{font-size:9px;padding:1px 5px;border-radius:3px;
+    background:rgba(167,139,250,.16);color:var(--violet);white-space:nowrap}
+  .cast-card .lv{font-size:11px;color:var(--cyan);margin-top:3px;
+    font-variant-numeric:tabular-nums}
+  .cast-card .vc{font-size:10px;color:var(--dim);margin-top:4px;line-height:1.5}
+  .cast-card .tics{color:var(--amber)}
+  .cast-card .banned{color:var(--rose);opacity:.8}
+  .cast-card .prog{height:3px;background:rgba(30,41,59,.8);border-radius:2px;
+    margin-top:6px;overflow:hidden}
+  .cast-card .prog div{height:100%;background:linear-gradient(90deg,var(--cyan),var(--violet))}
+
+  /* ---------- 事实甘特 ---------- */
+  .gantt{position:relative;margin-top:8px}
+  .gantt-row{
+    display:grid;grid-template-columns:104px 1fr;gap:10px;
+    align-items:center;margin-bottom:3px;height:19px;
+  }
+  .gantt-lbl{font-size:10.5px;color:var(--txt2);text-align:right;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .gantt-track{
+    position:relative;height:14px;background:rgba(30,41,59,.5);
+    border-radius:3px;overflow:hidden;
+  }
+  .gantt-bar{
+    position:absolute;top:2px;height:10px;border-radius:2px;
+    transition:.15s;cursor:pointer;
+  }
+  .gantt-bar:hover{filter:brightness(1.5)}
+  .gantt-bar.imm{border:1px solid rgba(251,113,133,.9)}
+  .gantt-bar.active{outline:1px solid #fff;outline-offset:1px}
+
+  /* ---------- 注入块 ---------- */
+  .inject{
+    background:#060910;border:1px solid var(--line);border-radius:8px;
+    padding:12px 14px;font-family:ui-monospace,"Cascadia Code",monospace;
+    font-size:11px;line-height:1.7;color:#8ba3c7;
+    max-height:400px;overflow:auto;white-space:pre-wrap;
+    word-break:break-all;
+  }
+  .inject .hl-c{color:var(--cyan);font-weight:600}
+  .inject .hl-v{color:var(--violet);font-weight:600}
+  .inject .hl-a{color:var(--amber);font-weight:600}
+  .inject .hl-r{color:var(--rose);font-weight:600}
+  .inject .hl-g{color:var(--emerald)}
+
+  .inject-head{
+    display:flex;justify-content:space-between;align-items:center;
+    margin-bottom:9px;font-size:11px;color:var(--dim);
+  }
+  .budget{display:flex;gap:3px;margin-top:10px;height:7px;border-radius:4px;
+    overflow:hidden;background:rgba(30,41,59,.5)}
+  .budget div{transition:.3s}
+
+  /* ---------- RAG 对比 ---------- */
+  .cmp{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .cmp-box{border-radius:8px;padding:12px 13px;border:1px solid}
+  .cmp-box.bad{border-color:rgba(251,113,133,.4);background:rgba(251,113,133,.06)}
+  .cmp-box.good{border-color:rgba(52,211,153,.4);background:rgba(52,211,153,.06)}
+  .cmp-box h3{font-size:11.5px;font-weight:600;margin-bottom:7px}
+  .cmp-box.bad h3{color:var(--rose)}
+  .cmp-box.good h3{color:var(--emerald)}
+  .cmp-box ul{list-style:none;font-size:11px;line-height:1.75;color:var(--txt2)}
+  .cmp-box li{padding-left:13px;position:relative}
+  .cmp-box li::before{content:'·';position:absolute;left:3px;
+    color:var(--dim);font-weight:700}
+
+  /* ---------- 表格 ---------- */
+  table{width:100%;border-collapse:collapse;font-size:11px}
+  th{
+    text-align:left;padding:6px 9px;color:var(--dim);font-weight:500;
+    border-bottom:1px solid var(--line);font-size:10px;
+    text-transform:uppercase;letter-spacing:.4px;
+  }
+  td{padding:5px 9px;border-bottom:1px solid rgba(30,41,59,.5);
+    color:var(--txt2);font-variant-numeric:tabular-nums}
+  tr:last-child td{border-bottom:none}
+  tr:hover td{background:rgba(34,211,238,.04)}
+  td.mono{font-family:ui-monospace,monospace;font-size:10.5px}
+
+  .pill{display:inline-block;padding:1px 6px;border-radius:3px;
+    font-size:9.5px;font-weight:500}
+  .pill.imm{background:rgba(251,113,133,.15);color:var(--rose)}
+  .pill.mut{background:rgba(34,211,238,.15);color:var(--cyan)}
+  .pill.ok{background:rgba(52,211,153,.15);color:var(--emerald)}
+  .pill.due{background:rgba(251,191,36,.15);color:var(--amber)}
+  .pill.od{background:rgba(251,113,133,.2);color:var(--rose)}
+
+  /* ---------- 卷/弧 ---------- */
+  .ladder{display:flex;flex-direction:column;gap:7px}
+  .lvl{display:flex;align-items:center;gap:10px}
+  .lvl .k{width:66px;font-size:10.5px;color:var(--dim);text-align:right}
+  .lvl .bar{flex:1;height:22px;border-radius:4px;display:flex;
+    align-items:center;padding:0 9px;font-size:10.5px;font-weight:500;
+    color:#0b1220;white-space:nowrap;overflow:hidden}
+  .lvl .meta{width:126px;font-size:10px;color:var(--dim);
+    font-variant-numeric:tabular-nums}
+
+  ::-webkit-scrollbar{width:7px;height:7px}
+  ::-webkit-scrollbar-track{background:transparent}
+  ::-webkit-scrollbar-thumb{background:var(--line2);border-radius:4px}
+  ::-webkit-scrollbar-thumb:hover{background:#3b4d6b}
+
+  .fadein{animation:fi .3s ease}
+  @keyframes fi{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <div>
+    <h1>四界 · 长篇小说 Agent <span>记忆与状态大屏</span></h1>
+    <div class="sub">5000 章 × 4000 字 = 2000 万字｜拖动时间轴，看 Agent 在第 N 章「记得什么、注入什么」</div>
+  </div>
+  <div class="kpis">
+    <div class="kpi"><div class="v" id="kCh">5000</div><div class="l">总章数</div></div>
+    <div class="kpi"><div class="v" id="kLv">108</div><div class="l">境界阶数</div></div>
+    <div class="kpi"><div class="v" id="kEnt">6</div><div class="l">人物实体</div></div>
+    <div class="kpi"><div class="v" id="kFact">30</div><div class="l">事实条目</div></div>
+    <div class="kpi"><div class="v" id="kInj">1.9K</div><div class="l">每章注入字符</div></div>
+  </div>
+</header>
+
+<!-- 时间轴 -->
+<div class="scrub">
+  <label>章号</label>
+  <input type="range" id="scrub" min="1" max="5000" value="1" step="1">
+  <div class="val" id="scrubVal">1</div>
+  <div class="rm" id="scrubRealm">人界 · 炼气初期</div>
+  <label style="margin-left:8px">快捷</label>
+  <div style="display:flex;gap:5px">
+    <button class="jump" data-ch="1">开篇</button>
+    <button class="jump" data-ch="1601">入灵界</button>
+    <button class="jump" data-ch="2100">断臂</button>
+    <button class="jump" data-ch="3001">飞升仙界</button>
+    <button class="jump" data-ch="4201">入神界</button>
+    <button class="jump" data-ch="4953">终局</button>
+  </div>
+</div>
+
+<div class="grid g-32" style="margin-bottom:14px">
+  <!-- 力量曲线 -->
+  <div class="panel">
+    <h2>① 世界观：108 阶战力曲线 <span class="tag">world.json · 只读</span></h2>
+    <div class="note">绝对战力全书单调递增，但<b style="color:var(--amber)">界内地位 rank 每界重置</b>——这是防止 5000 章数字爆炸的核心机制</div>
+    <canvas id="powerChart"></canvas>
+    <div style="display:flex;gap:16px;margin-top:8px;font-size:10px;color:var(--dim);flex-wrap:wrap">
+      <span><span class="dot" style="background:var(--realm1)"></span>人界 1-1600</span>
+      <span><span class="dot" style="background:var(--realm2)"></span>灵界 1601-3000</span>
+      <span><span class="dot" style="background:var(--realm3)"></span>仙界 3001-4200</span>
+      <span><span class="dot" style="background:var(--realm4)"></span>神界 4201-5000</span>
+      <span style="margin-left:auto;color:var(--cyan)">白线 = 当前章位置</span>
+    </div>
+  </div>
+
+  <!-- 层级 -->
+  <div class="panel">
+    <h2>② 三级滚动大纲 <span class="tag">outline.json</span></h2>
+    <div class="note">只细化到「接下来要写的这一段」，上层已定死，下层按需展开</div>
+    <div class="ladder" id="ladder"></div>
+    <div style="margin-top:12px;font-size:10.5px;color:var(--dim);line-height:1.7">
+      <div>· <b style="color:var(--txt2)">全书总纲</b> 1 次生成，只给脊柱，不给细节</div>
+      <div>· <b style="color:var(--txt2)">卷纲</b> 100 卷，开写该卷时才规划</div>
+      <div>· <b style="color:var(--txt2)">弧纲</b> 500 弧，开写该弧时才规划</div>
+      <div>· <b style="color:var(--txt2)">章纲</b> 5000 章，开写该章时才规划</div>
+    </div>
+  </div>
+</div>
+
+<!-- 存储层 -->
+<div class="panel" style="margin-bottom:14px">
+  <h2>③ Agent 到底存了什么 <span class="tag">7 个存储层</span></h2>
+  <div class="note">点击任意层，下方会显示它在这一章的实际内容。注意：<b style="color:var(--cyan)">每层的大小都与章节号无关</b></div>
+  <div class="stores" id="stores"></div>
+</div>
+
+<div class="grid g2" style="margin-bottom:14px">
+  <!-- 人物 -->
+<div class="panel" style="margin-bottom:14px">
+  <h2>③·五 人物体系 <span class="tag">cast.json · 半硬</span></h2>
+  <div class="note">境界轨迹与声纹是结构化的（防 5000 章漂移），弧光交给大纲层。当前章在场的角色按境界排序</div>
+  <div id="castGrid" class="cast-grid"></div>
+</div>
+
+<!-- 事实甘特 -->
+  <div class="panel">
+    <h2>④ 时序事实台账 <span class="tag">canon.json · facts</span></h2>
+    <div class="note">每条事实带<b style="color:var(--cyan)">有效期</b>。第 3000 章查「右臂」得到「已愈」，第 2200 章得到「断」——这是 RAG 做不到的</div>
+    <div class="gantt" id="gantt"></div>
+    <div style="display:flex;gap:14px;margin-top:10px;font-size:10px;color:var(--dim)">
+      <span><span class="pill imm">不可变</span> 全书不能改</span>
+      <span><span class="pill mut">可变</span> 有有效期区间</span>
+    </div>
+  </div>
+
+  <!-- 伏笔 -->
+  <div class="panel">
+    <h2>⑤ 伏笔账本 <span class="tag">foreshadows</span></h2>
+    <div class="note">第 100 章埋的伏笔，第 3000 章才回收——<b style="color:var(--rose)">跨 2900 章的承诺</b></div>
+    <table id="fsTable">
+      <thead><tr><th>ID</th><th>内容</th><th>埋设</th><th>回收窗口</th><th>状态</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- 四层大纲详情 -->
+<div class="grid g2" style="margin-bottom:14px">
+  <div class="panel">
+    <h2>⑤·五 四层大纲 <span class="tag">outline_full.json</span></h2>
+    <div class="note">全书 1 幕 → 100 卷 → 500 弧 → 5000 章。上层已定死，下层确定性展开</div>
+    <div id="outlineTree"></div>
+  </div>
+  <div class="panel">
+    <h2>⑤·六 本章大纲 <span class="tag">chapter outline</span></h2>
+    <div class="note">这一章要写的 4 个 beat。模型只执行，不规划</div>
+    <div id="chOutline"></div>
+  </div>
+</div>
+
+<!-- 注入 -->
+<div class="panel" style="margin-bottom:14px">
+  <h2>⑥ 第 <span id="injCh" style="color:var(--cyan)">1</span> 章实际注入给模型的上下文 <span class="tag">ContextBuilder.build()</span></h2>
+  <div class="inject-head">
+    <span id="injSize">—</span>
+    <span>这块内容<b style="color:var(--emerald)">大小恒定</b>，不随章节号增长</span>
+  </div>
+  <div class="budget" id="budget"></div>
+  <div class="inject" id="inject" style="margin-top:11px"></div>
+</div>
+
+<!-- RAG 对比 -->
+<div class="panel">
+  <h2>⑦ 为什么这不是 RAG</h2>
+  <div class="note">这是最容易被误解的一点。两者解决的是完全不同的问题</div>
+  <div class="cmp">
+    <div class="cmp-box bad">
+      <h3>❌ RAG（向量检索）的做法</h3>
+      <ul>
+        <li>把前文切片、embedding、存向量库</li>
+        <li>写第 N 章时用「相似度」检索相关片段</li>
+        <li><b style="color:var(--rose)">检索是模糊的</b>：要查"右臂现在怎么样"，可能召回三章前的旧状态</li>
+        <li><b style="color:var(--rose)">没有"当前值"概念</b>：摘要说"受过伤"，但给不出"现在好了没有"</li>
+        <li><b style="color:var(--rose)">5000 章后向量库有百万切片</b>，召回质量持续下降</li>
+        <li><b style="color:var(--rose)">无法校验</b>：检索结果对不对，只能靠模型自己判断</li>
+      </ul>
+    </div>
+    <div class="cmp-box good">
+      <h3>✅ 本架构（时序正典台账）</h3>
+      <ul>
+        <li>事实存成<b style="color:var(--emerald)">结构化记录</b>，带有效期区间</li>
+        <li>写第 N 章时<b style="color:var(--emerald)">精确查询</b>：<code>state_at(entity, N)</code></li>
+        <li><b style="color:var(--emerald)">查询是确定的</b>：第 2200 章必得"断"，第 3000 章必得"已愈"</li>
+        <li><b style="color:var(--emerald)">有"当前值"</b>：返回的永远是当时有效的值</li>
+        <li><b style="color:var(--emerald)">5000 章后查询成本不变</b>，因为只查在场实体</li>
+        <li><b style="color:var(--emerald)">可自动校验</b>：冲突在写入时就报错</li>
+      </ul>
+    </div>
+  </div>
+  <div style="margin-top:12px;padding:11px 13px;border-radius:7px;
+    background:rgba(251,191,36,.07);border:1px solid rgba(251,191,36,.25);
+    font-size:11.5px;color:var(--txt2);line-height:1.7">
+    <b style="color:var(--amber)">一句话区别：</b>
+    RAG 是「<b>找相似的</b>」，本架构是「<b>查当时是什么</b>」。
+    写小说需要的不是相似片段，是<b style="color:var(--cyan)">确切的事实状态</b>——
+    主角现在什么境界、右手好了没有、跟谁是盟友。这些必须<b>精确</b>，不能靠相似度。
+  </div>
+</div>
+
+</div>
+
+<script>
+const D = {
+ "total_chapters": 5000,
+ "words_per_chapter": 4000,
+ "world": {
+  "realms": [
+   {
+    "name": "人界",
+    "alias": "凡俗界",
+    "start": 1,
+    "end": 1600,
+    "essence": "炼精化气。修士以肉身承载灵气，寿元不过三百。",
+    "levels": [
+     "炼气",
+     "筑基",
+     "金丹",
+     "元婴",
+     "化神",
+     "炼虚",
+     "合体",
+     "大乘",
+     "渡劫"
+    ],
+    "power_start": 1.0,
+    "power_end": 1000000.0
+   },
+   {
+    "name": "灵界",
+    "alias": "灵域",
+    "start": 1601,
+    "end": 3000,
+    "essence": "炼气化神。灵界以灵根为本，无灵根者如凡人。",
+    "levels": [
+     "灵徒",
+     "灵师",
+     "灵王",
+     "灵皇",
+     "灵尊",
+     "灵圣",
+     "灵帝",
+     "灵祖",
+     "灵源"
+    ],
+    "power_start": 2000000.0,
+    "power_end": 1000000000.0
+   },
+   {
+    "name": "仙界",
+    "alias": "仙域",
+    "start": 3001,
+    "end": 4200,
+    "essence": "炼神还虚。仙界以法则为尊，仙位有限，需夺。",
+    "levels": [
+     "散仙",
+     "真仙",
+     "玄仙",
+     "金仙",
+     "太乙",
+     "大罗",
+     "混元",
+     "准圣",
+     "天道"
+    ],
+    "power_start": 2000000000.0,
+    "power_end": 1000000000000.0
+   },
+   {
+    "name": "神界",
+    "alias": "神域",
+    "start": 4201,
+    "end": 5000,
+    "essence": "炼虚合道。神界以神格为基，神格唯一，不可复制。",
+    "levels": [
+     "神人",
+     "神使",
+     "神将",
+     "神君",
+     "神王",
+     "神皇",
+     "神帝",
+     "神尊",
+     "神主"
+    ],
+    "power_start": 2000000000000.0,
+    "power_end": 1000000000000000.0
+   }
+  ],
+  "levels": [
+   {
+    "i": 1,
+    "name": "炼气初期",
+    "realm": "人界",
+    "s": 1,
+    "e": 21,
+    "power": 1.0,
+    "rank": 0.0,
+    "chapters": 21
+   },
+   {
+    "i": 2,
+    "name": "炼气中期",
+    "realm": "人界",
+    "s": 22,
+    "e": 45,
+    "power": 1.7,
+    "rank": 0.0385,
+    "chapters": 24
+   },
+   {
+    "i": 3,
+    "name": "炼气后期",
+    "realm": "人界",
+    "s": 46,
+    "e": 71,
+    "power": 2.89,
+    "rank": 0.0769,
+    "chapters": 26
+   },
+   {
+    "i": 4,
+    "name": "筑基初期",
+    "realm": "人界",
+    "s": 72,
+    "e": 100,
+    "power": 4.92,
+    "rank": 0.1154,
+    "chapters": 29
+   },
+   {
+    "i": 5,
+    "name": "筑基中期",
+    "realm": "人界",
+    "s": 101,
+    "e": 132,
+    "power": 8.38,
+    "rank": 0.1538,
+    "chapters": 32
+   },
+   {
+    "i": 6,
+    "name": "筑基后期",
+    "realm": "人界",
+    "s": 133,
+    "e": 167,
+    "power": 14.25,
+    "rank": 0.1923,
+    "chapters": 35
+   },
+   {
+    "i": 7,
+    "name": "金丹初期",
+    "realm": "人界",
+    "s": 168,
+    "e": 205,
+    "power": 24.24,
+    "rank": 0.2308,
+    "chapters": 38
+   },
+   {
+    "i": 8,
+    "name": "金丹中期",
+    "realm": "人界",
+    "s": 206,
+    "e": 246,
+    "power": 41.25,
+    "rank": 0.2692,
+    "chapters": 41
+   },
+   {
+    "i": 9,
+    "name": "金丹后期",
+    "realm": "人界",
+    "s": 247,
+    "e": 290,
+    "power": 70.17,
+    "rank": 0.3077,
+    "chapters": 44
+   },
+   {
+    "i": 10,
+    "name": "元婴初期",
+    "realm": "人界",
+    "s": 291,
+    "e": 337,
+    "power": 119.38,
+    "rank": 0.3462,
+    "chapters": 47
+   },
+   {
+    "i": 11,
+    "name": "元婴中期",
+    "realm": "人界",
+    "s": 338,
+    "e": 387,
+    "power": 203.09,
+    "rank": 0.3846,
+    "chapters": 50
+   },
+   {
+    "i": 12,
+    "name": "元婴后期",
+    "realm": "人界",
+    "s": 388,
+    "e": 440,
+    "power": 345.51,
+    "rank": 0.4231,
+    "chapters": 53
+   },
+   {
+    "i": 13,
+    "name": "化神初期",
+    "realm": "人界",
+    "s": 441,
+    "e": 496,
+    "power": 587.8,
+    "rank": 0.4615,
+    "chapters": 56
+   },
+   {
+    "i": 14,
+    "name": "化神中期",
+    "realm": "人界",
+    "s": 497,
+    "e": 555,
+    "power": 1000.0,
+    "rank": 0.5,
+    "chapters": 59
+   },
+   {
+    "i": 15,
+    "name": "化神后期",
+    "realm": "人界",
+    "s": 556,
+    "e": 617,
+    "power": 1701.25,
+    "rank": 0.5385,
+    "chapters": 62
+   },
+   {
+    "i": 16,
+    "name": "炼虚初期",
+    "realm": "人界",
+    "s": 618,
+    "e": 682,
+    "power": 2894.27,
+    "rank": 0.5769,
+    "chapters": 65
+   },
+   {
+    "i": 17,
+    "name": "炼虚中期",
+    "realm": "人界",
+    "s": 683,
+    "e": 750,
+    "power": 4923.88,
+    "rank": 0.6154,
+    "chapters": 68
+   },
+   {
+    "i": 18,
+    "name": "炼虚后期",
+    "realm": "人界",
+    "s": 751,
+    "e": 821,
+    "power": 8376.78,
+    "rank": 0.6538,
+    "chapters": 71
+   },
+   {
+    "i": 19,
+    "name": "合体初期",
+    "realm": "人界",
+    "s": 822,
+    "e": 895,
+    "power": 14251.03,
+    "rank": 0.6923,
+    "chapters": 74
+   },
+   {
+    "i": 20,
+    "name": "合体中期",
+    "realm": "人界",
+    "s": 896,
+    "e": 972,
+    "power": 24244.62,
+    "rank": 0.7308,
+    "chapters": 77
+   },
+   {
+    "i": 21,
+    "name": "合体后期",
+    "realm": "人界",
+    "s": 973,
+    "e": 1052,
+    "power": 41246.26,
+    "rank": 0.7692,
+    "chapters": 80
+   },
+   {
+    "i": 22,
+    "name": "大乘初期",
+    "realm": "人界",
+    "s": 1053,
+    "e": 1135,
+    "power": 70170.38,
+    "rank": 0.8077,
+    "chapters": 83
+   },
+   {
+    "i": 23,
+    "name": "大乘中期",
+    "realm": "人界",
+    "s": 1136,
+    "e": 1222,
+    "power": 119377.66,
+    "rank": 0.8462,
+    "chapters": 87
+   },
+   {
+    "i": 24,
+    "name": "大乘后期",
+    "realm": "人界",
+    "s": 1223,
+    "e": 1312,
+    "power": 203091.76,
+    "rank": 0.8846,
+    "chapters": 90
+   },
+   {
+    "i": 25,
+    "name": "渡劫初期",
+    "realm": "人界",
+    "s": 1313,
+    "e": 1405,
+    "power": 345510.73,
+    "rank": 0.9231,
+    "chapters": 93
+   },
+   {
+    "i": 26,
+    "name": "渡劫中期",
+    "realm": "人界",
+    "s": 1406,
+    "e": 1501,
+    "power": 587801.61,
+    "rank": 0.9615,
+    "chapters": 96
+   },
+   {
+    "i": 27,
+    "name": "渡劫后期",
+    "realm": "人界",
+    "s": 1502,
+    "e": 1600,
+    "power": 1000000.0,
+    "rank": 1.0,
+    "chapters": 99
+   },
+   {
+    "i": 28,
+    "name": "灵徒初期",
+    "realm": "灵界",
+    "s": 1601,
+    "e": 1618,
+    "power": 2000000.0,
+    "rank": 0.0,
+    "chapters": 18
+   },
+   {
+    "i": 29,
+    "name": "灵徒中期",
+    "realm": "灵界",
+    "s": 1619,
+    "e": 1639,
+    "power": 2540016.48,
+    "rank": 0.0385,
+    "chapters": 21
+   },
+   {
+    "i": 30,
+    "name": "灵徒后期",
+    "realm": "灵界",
+    "s": 1640,
+    "e": 1662,
+    "power": 3225841.86,
+    "rank": 0.0769,
+    "chapters": 23
+   },
+   {
+    "i": 31,
+    "name": "灵师初期",
+    "realm": "灵界",
+    "s": 1663,
+    "e": 1688,
+    "power": 4096845.74,
+    "rank": 0.1154,
+    "chapters": 26
+   },
+   {
+    "i": 32,
+    "name": "灵师中期",
+    "realm": "灵界",
+    "s": 1689,
+    "e": 1716,
+    "power": 5203027.85,
+    "rank": 0.1538,
+    "chapters": 28
+   },
+   {
+    "i": 33,
+    "name": "灵师后期",
+    "realm": "灵界",
+    "s": 1717,
+    "e": 1747,
+    "power": 6607888.24,
+    "rank": 0.1923,
+    "chapters": 31
+   },
+   {
+    "i": 34,
+    "name": "灵王初期",
+    "realm": "灵界",
+    "s": 1748,
+    "e": 1781,
+    "power": 8392072.51,
+    "rank": 0.2308,
+    "chapters": 34
+   },
+   {
+    "i": 35,
+    "name": "灵王中期",
+    "realm": "灵界",
+    "s": 1782,
+    "e": 1817,
+    "power": 10658001.23,
+    "rank": 0.2692,
+    "chapters": 36
+   },
+   {
+    "i": 36,
+    "name": "灵王后期",
+    "realm": "灵界",
+    "s": 1818,
+    "e": 1856,
+    "power": 13535749.38,
+    "rank": 0.3077,
+    "chapters": 39
+   },
+   {
+    "i": 37,
+    "name": "灵皇初期",
+    "realm": "灵界",
+    "s": 1857,
+    "e": 1897,
+    "power": 17190513.25,
+    "rank": 0.3462,
+    "chapters": 41
+   },
+   {
+    "i": 38,
+    "name": "灵皇中期",
+    "realm": "灵界",
+    "s": 1898,
+    "e": 1941,
+    "power": 21832093.47,
+    "rank": 0.3846,
+    "chapters": 44
+   },
+   {
+    "i": 39,
+    "name": "灵皇后期",
+    "realm": "灵界",
+    "s": 1942,
+    "e": 1988,
+    "power": 27726938.59,
+    "rank": 0.4231,
+    "chapters": 47
+   },
+   {
+    "i": 40,
+    "name": "灵尊初期",
+    "realm": "灵界",
+    "s": 1989,
+    "e": 2037,
+    "power": 35213440.47,
+    "rank": 0.4615,
+    "chapters": 49
+   },
+   {
+    "i": 41,
+    "name": "灵尊中期",
+    "realm": "灵界",
+    "s": 2038,
+    "e": 2089,
+    "power": 44721359.55,
+    "rank": 0.5,
+    "chapters": 52
+   },
+   {
+    "i": 42,
+    "name": "灵尊后期",
+    "realm": "灵界",
+    "s": 2090,
+    "e": 2143,
+    "power": 56796495.12,
+    "rank": 0.5385,
+    "chapters": 54
+   },
+   {
+    "i": 43,
+    "name": "灵圣初期",
+    "realm": "灵界",
+    "s": 2144,
+    "e": 2200,
+    "power": 72132016.79,
+    "rank": 0.5769,
+    "chapters": 57
+   },
+   {
+    "i": 44,
+    "name": "灵圣中期",
+    "realm": "灵界",
+    "s": 2201,
+    "e": 2260,
+    "power": 91608255.67,
+    "rank": 0.6154,
+    "chapters": 60
+   },
+   {
+    "i": 45,
+    "name": "灵圣后期",
+    "realm": "灵界",
+    "s": 2261,
+    "e": 2322,
+    "power": 116343239.52,
+    "rank": 0.6538,
+    "chapters": 62
+   },
+   {
+    "i": 46,
+    "name": "灵帝初期",
+    "realm": "灵界",
+    "s": 2323,
+    "e": 2387,
+    "power": 147756872.82,
+    "rank": 0.6923,
+    "chapters": 65
+   },
+   {
+    "i": 47,
+    "name": "灵帝中期",
+    "realm": "灵界",
+    "s": 2388,
+    "e": 2454,
+    "power": 187652445.96,
+    "rank": 0.7308,
+    "chapters": 67
+   },
+   {
+    "i": 48,
+    "name": "灵帝后期",
+    "realm": "灵界",
+    "s": 2455,
+    "e": 2524,
+    "power": 238320152.57,
+    "rank": 0.7692,
+    "chapters": 70
+   },
+   {
+    "i": 49,
+    "name": "灵祖初期",
+    "realm": "灵界",
+    "s": 2525,
+    "e": 2597,
+    "power": 302668557.44,
+    "rank": 0.8077,
+    "chapters": 73
+   },
+   {
+    "i": 50,
+    "name": "灵祖中期",
+    "realm": "灵界",
+    "s": 2598,
+    "e": 2672,
+    "power": 384391561.85,
+    "rank": 0.8462,
+    "chapters": 75
+   },
+   {
+    "i": 51,
+    "name": "灵祖后期",
+    "realm": "灵界",
+    "s": 2673,
+    "e": 2750,
+    "power": 488180450.82,
+    "rank": 0.8846,
+    "chapters": 78
+   },
+   {
+    "i": 52,
+    "name": "灵源初期",
+    "realm": "灵界",
+    "s": 2751,
+    "e": 2831,
+    "power": 619993195.0,
+    "rank": 0.9231,
+    "chapters": 81
+   },
+   {
+    "i": 53,
+    "name": "灵源中期",
+    "realm": "灵界",
+    "s": 2832,
+    "e": 2914,
+    "power": 787396466.21,
+    "rank": 0.9615,
+    "chapters": 83
+   },
+   {
+    "i": 54,
+    "name": "灵源后期",
+    "realm": "灵界",
+    "s": 2915,
+    "e": 3000,
+    "power": 1000000000.0,
+    "rank": 1.0,
+    "chapters": 86
+   },
+   {
+    "i": 55,
+    "name": "散仙初期",
+    "realm": "仙界",
+    "s": 3001,
+    "e": 3015,
+    "power": 2000000000.0,
+    "rank": 0.0,
+    "chapters": 15
+   },
+   {
+    "i": 56,
+    "name": "散仙中期",
+    "realm": "仙界",
+    "s": 3016,
+    "e": 3033,
+    "power": 2540016479.4,
+    "rank": 0.0385,
+    "chapters": 18
+   },
+   {
+    "i": 57,
+    "name": "散仙后期",
+    "realm": "仙界",
+    "s": 3034,
+    "e": 3053,
+    "power": 3225841857.8,
+    "rank": 0.0769,
+    "chapters": 20
+   },
+   {
+    "i": 58,
+    "name": "真仙初期",
+    "realm": "仙界",
+    "s": 3054,
+    "e": 3075,
+    "power": 4096845739.37,
+    "rank": 0.1154,
+    "chapters": 22
+   },
+   {
+    "i": 59,
+    "name": "真仙中期",
+    "realm": "仙界",
+    "s": 3076,
+    "e": 3099,
+    "power": 5203027845.78,
+    "rank": 0.1538,
+    "chapters": 24
+   },
+   {
+    "i": 60,
+    "name": "真仙后期",
+    "realm": "仙界",
+    "s": 3100,
+    "e": 3126,
+    "power": 6607888235.52,
+    "rank": 0.1923,
+    "chapters": 27
+   },
+   {
+    "i": 61,
+    "name": "玄仙初期",
+    "realm": "仙界",
+    "s": 3127,
+    "e": 3155,
+    "power": 8392072506.11,
+    "rank": 0.2308,
+    "chapters": 29
+   },
+   {
+    "i": 62,
+    "name": "玄仙中期",
+    "realm": "仙界",
+    "s": 3156,
+    "e": 3186,
+    "power": 10658001230.91,
+    "rank": 0.2692,
+    "chapters": 31
+   },
+   {
+    "i": 63,
+    "name": "玄仙后期",
+    "realm": "仙界",
+    "s": 3187,
+    "e": 3219,
+    "power": 13535749381.97,
+    "rank": 0.3077,
+    "chapters": 33
+   },
+   {
+    "i": 64,
+    "name": "金仙初期",
+    "realm": "仙界",
+    "s": 3220,
+    "e": 3255,
+    "power": 17190513245.59,
+    "rank": 0.3462,
+    "chapters": 36
+   },
+   {
+    "i": 65,
+    "name": "金仙中期",
+    "realm": "仙界",
+    "s": 3256,
+    "e": 3293,
+    "power": 21832093466.54,
+    "rank": 0.3846,
+    "chapters": 38
+   },
+   {
+    "i": 66,
+    "name": "金仙后期",
+    "realm": "仙界",
+    "s": 3294,
+    "e": 3333,
+    "power": 27726938592.37,
+    "rank": 0.4231,
+    "chapters": 40
+   },
+   {
+    "i": 67,
+    "name": "太乙初期",
+    "realm": "仙界",
+    "s": 3334,
+    "e": 3375,
+    "power": 35213440473.91,
+    "rank": 0.4615,
+    "chapters": 42
+   },
+   {
+    "i": 68,
+    "name": "太乙中期",
+    "realm": "仙界",
+    "s": 3376,
+    "e": 3419,
+    "power": 44721359550.0,
+    "rank": 0.5,
+    "chapters": 44
+   },
+   {
+    "i": 69,
+    "name": "太乙后期",
+    "realm": "仙界",
+    "s": 3420,
+    "e": 3466,
+    "power": 56796495119.0,
+    "rank": 0.5385,
+    "chapters": 47
+   },
+   {
+    "i": 70,
+    "name": "大罗初期",
+    "realm": "仙界",
+    "s": 3467,
+    "e": 3515,
+    "power": 72132016787.12,
+    "rank": 0.5769,
+    "chapters": 49
+   },
+   {
+    "i": 71,
+    "name": "大罗中期",
+    "realm": "仙界",
+    "s": 3516,
+    "e": 3566,
+    "power": 91608255665.69,
+    "rank": 0.6154,
+    "chapters": 51
+   },
+   {
+    "i": 72,
+    "name": "大罗后期",
+    "realm": "仙界",
+    "s": 3567,
+    "e": 3619,
+    "power": 116343239519.82,
+    "rank": 0.6538,
+    "chapters": 53
+   },
+   {
+    "i": 73,
+    "name": "混元初期",
+    "realm": "仙界",
+    "s": 3620,
+    "e": 3675,
+    "power": 147756872823.36,
+    "rank": 0.6923,
+    "chapters": 56
+   },
+   {
+    "i": 74,
+    "name": "混元中期",
+    "realm": "仙界",
+    "s": 3676,
+    "e": 3733,
+    "power": 187652445957.72,
+    "rank": 0.7308,
+    "chapters": 58
+   },
+   {
+    "i": 75,
+    "name": "混元后期",
+    "realm": "仙界",
+    "s": 3734,
+    "e": 3793,
+    "power": 238320152565.84,
+    "rank": 0.7692,
+    "chapters": 60
+   },
+   {
+    "i": 76,
+    "name": "准圣初期",
+    "realm": "仙界",
+    "s": 3794,
+    "e": 3855,
+    "power": 302668557444.76,
+    "rank": 0.8077,
+    "chapters": 62
+   },
+   {
+    "i": 77,
+    "name": "准圣中期",
+    "realm": "仙界",
+    "s": 3856,
+    "e": 3920,
+    "power": 384391561852.44,
+    "rank": 0.8462,
+    "chapters": 65
+   },
+   {
+    "i": 78,
+    "name": "准圣后期",
+    "realm": "仙界",
+    "s": 3921,
+    "e": 3987,
+    "power": 488180450823.09,
+    "rank": 0.8846,
+    "chapters": 67
+   },
+   {
+    "i": 79,
+    "name": "天道初期",
+    "realm": "仙界",
+    "s": 3988,
+    "e": 4056,
+    "power": 619993195004.95,
+    "rank": 0.9231,
+    "chapters": 69
+   },
+   {
+    "i": 80,
+    "name": "天道中期",
+    "realm": "仙界",
+    "s": 4057,
+    "e": 4127,
+    "power": 787396466213.14,
+    "rank": 0.9615,
+    "chapters": 71
+   },
+   {
+    "i": 81,
+    "name": "天道后期",
+    "realm": "仙界",
+    "s": 4128,
+    "e": 4200,
+    "power": 1000000000000.0,
+    "rank": 1.0,
+    "chapters": 73
+   },
+   {
+    "i": 82,
+    "name": "神人初期",
+    "realm": "神界",
+    "s": 4201,
+    "e": 4210,
+    "power": 2000000000000.0,
+    "rank": 0.0,
+    "chapters": 10
+   },
+   {
+    "i": 83,
+    "name": "神人中期",
+    "realm": "神界",
+    "s": 4211,
+    "e": 4222,
+    "power": 2540016479396.56,
+    "rank": 0.0385,
+    "chapters": 12
+   },
+   {
+    "i": 84,
+    "name": "神人后期",
+    "realm": "神界",
+    "s": 4223,
+    "e": 4235,
+    "power": 3225841857803.04,
+    "rank": 0.0769,
+    "chapters": 13
+   },
+   {
+    "i": 85,
+    "name": "神使初期",
+    "realm": "神界",
+    "s": 4236,
+    "e": 4250,
+    "power": 4096845739373.46,
+    "rank": 0.1154,
+    "chapters": 15
+   },
+   {
+    "i": 86,
+    "name": "神使中期",
+    "realm": "神界",
+    "s": 4251,
+    "e": 4266,
+    "power": 5203027845777.08,
+    "rank": 0.1538,
+    "chapters": 16
+   },
+   {
+    "i": 87,
+    "name": "神使后期",
+    "realm": "神界",
+    "s": 4267,
+    "e": 4284,
+    "power": 6607888235516.48,
+    "rank": 0.1923,
+    "chapters": 18
+   },
+   {
+    "i": 88,
+    "name": "神将初期",
+    "realm": "神界",
+    "s": 4285,
+    "e": 4303,
+    "power": 8392072506111.24,
+    "rank": 0.2308,
+    "chapters": 19
+   },
+   {
+    "i": 89,
+    "name": "神将中期",
+    "realm": "神界",
+    "s": 4304,
+    "e": 4324,
+    "power": 10658001230906.66,
+    "rank": 0.2692,
+    "chapters": 21
+   },
+   {
+    "i": 90,
+    "name": "神将后期",
+    "realm": "神界",
+    "s": 4325,
+    "e": 4346,
+    "power": 13535749381965.85,
+    "rank": 0.3077,
+    "chapters": 22
+   },
+   {
+    "i": 91,
+    "name": "神君初期",
+    "realm": "神界",
+    "s": 4347,
+    "e": 4370,
+    "power": 17190513245587.51,
+    "rank": 0.3462,
+    "chapters": 24
+   },
+   {
+    "i": 92,
+    "name": "神君中期",
+    "realm": "神界",
+    "s": 4371,
+    "e": 4395,
+    "power": 21832093466538.54,
+    "rank": 0.3846,
+    "chapters": 25
+   },
+   {
+    "i": 93,
+    "name": "神君后期",
+    "realm": "神界",
+    "s": 4396,
+    "e": 4422,
+    "power": 27726938592366.89,
+    "rank": 0.4231,
+    "chapters": 27
+   },
+   {
+    "i": 94,
+    "name": "神王初期",
+    "realm": "神界",
+    "s": 4423,
+    "e": 4450,
+    "power": 35213440473914.13,
+    "rank": 0.4615,
+    "chapters": 28
+   },
+   {
+    "i": 95,
+    "name": "神王中期",
+    "realm": "神界",
+    "s": 4451,
+    "e": 4480,
+    "power": 44721359549995.8,
+    "rank": 0.5,
+    "chapters": 30
+   },
+   {
+    "i": 96,
+    "name": "神王后期",
+    "realm": "神界",
+    "s": 4481,
+    "e": 4511,
+    "power": 56796495119003.95,
+    "rank": 0.5385,
+    "chapters": 31
+   },
+   {
+    "i": 97,
+    "name": "神皇初期",
+    "realm": "神界",
+    "s": 4512,
+    "e": 4544,
+    "power": 72132016787118.05,
+    "rank": 0.5769,
+    "chapters": 33
+   },
+   {
+    "i": 98,
+    "name": "神皇中期",
+    "realm": "神界",
+    "s": 4545,
+    "e": 4578,
+    "power": 91608255665694.5,
+    "rank": 0.6154,
+    "chapters": 34
+   },
+   {
+    "i": 99,
+    "name": "神皇后期",
+    "realm": "神界",
+    "s": 4579,
+    "e": 4614,
+    "power": 116343239519818.48,
+    "rank": 0.6538,
+    "chapters": 36
+   },
+   {
+    "i": 100,
+    "name": "神帝初期",
+    "realm": "神界",
+    "s": 4615,
+    "e": 4651,
+    "power": 147756872823359.8,
+    "rank": 0.6923,
+    "chapters": 37
+   },
+   {
+    "i": 101,
+    "name": "神帝中期",
+    "realm": "神界",
+    "s": 4652,
+    "e": 4690,
+    "power": 187652445957717.56,
+    "rank": 0.7308,
+    "chapters": 39
+   },
+   {
+    "i": 102,
+    "name": "神帝后期",
+    "realm": "神界",
+    "s": 4691,
+    "e": 4730,
+    "power": 238320152565837.34,
+    "rank": 0.7692,
+    "chapters": 40
+   },
+   {
+    "i": 103,
+    "name": "神尊初期",
+    "realm": "神界",
+    "s": 4731,
+    "e": 4772,
+    "power": 302668557444764.1,
+    "rank": 0.8077,
+    "chapters": 42
+   },
+   {
+    "i": 104,
+    "name": "神尊中期",
+    "realm": "神界",
+    "s": 4773,
+    "e": 4815,
+    "power": 384391561852442.1,
+    "rank": 0.8462,
+    "chapters": 43
+   },
+   {
+    "i": 105,
+    "name": "神尊后期",
+    "realm": "神界",
+    "s": 4816,
+    "e": 4860,
+    "power": 488180450823091.8,
+    "rank": 0.8846,
+    "chapters": 45
+   },
+   {
+    "i": 106,
+    "name": "神主初期",
+    "realm": "神界",
+    "s": 4861,
+    "e": 4906,
+    "power": 619993195004947.1,
+    "rank": 0.9231,
+    "chapters": 46
+   },
+   {
+    "i": 107,
+    "name": "神主中期",
+    "realm": "神界",
+    "s": 4907,
+    "e": 4952,
+    "power": 787396466213144.2,
+    "rank": 0.9615,
+    "chapters": 46
+   },
+   {
+    "i": 108,
+    "name": "神主后期",
+    "realm": "神界",
+    "s": 4953,
+    "e": 5000,
+    "power": 1000000000000000.0,
+    "rank": 1.0,
+    "chapters": 48
+   }
+  ],
+  "rules": [
+   "境界共四界三十六境，每境三阶（初期/中期/后期），共一百零八阶。",
+   "境界不可跳级。可以借外力短时爆发，但事后必然反噬。",
+   "跨界飞升会受界壁压制，境界暂时跌落至新界底层，需重新攀升。",
+   "死者不可复生。任何复活情节都是设定错误。",
+   "神格唯一。同一神格不能同时存在两个持有者。",
+   "灵气浓度：人界 1，灵界 100，仙界 10000，神界 1000000。",
+   "凡人无法感知灵气。踏入炼气期是唯一的分界线。"
+  ],
+  "spirit_roots": {
+   "单灵根": "五行之一，修炼速度最快，万中无一。",
+   "双灵根": "五行之二，资质上佳。",
+   "三灵根": "常见资质，中人之姿。",
+   "四灵根": "资质平庸，多止步筑基。",
+   "五灵根": "五行俱全，最慢，但可修五行大道。",
+   "变异灵根": "雷、冰、风、暗等，罕见且强横。",
+   "伪灵根": "残缺灵根，终身无望金丹。"
+  },
+  "artifact_tiers": [
+   "凡器",
+   "灵器",
+   "宝器",
+   "道器",
+   "仙器",
+   "神器"
+  ],
+  "pill_tiers": [
+   "一品",
+   "二品",
+   "三品",
+   "四品",
+   "五品",
+   "六品",
+   "七品",
+   "八品",
+   "九品"
+  ],
+  "tribulations": {
+   "人界·渡劫": "九重天雷，一重强过一重。第九重为心魔劫。",
+   "灵界·灵源": "界壁反噬，需以自身灵域承受界壁碾压。",
+   "仙界·天道": "斩三尸，过去、现在、未来各斩一次。",
+   "神界·神主": "神格归一，需击败前一任神主的残念。"
+  }
+ },
+ "canon": {
+  "entities": [
+   {
+    "id": "c1",
+    "name": "林昭",
+    "aliases": [
+     "小林",
+     "昭哥"
+    ],
+    "voice": {
+     "语气": "冷硬，少废话",
+     "口头禅": [
+      "嗯",
+      "走"
+     ],
+     "禁用词": [
+      "其实",
+      "或许"
+     ]
+    },
+    "first": 1,
+    "importance": 1.0
+   },
+   {
+    "id": "c2",
+    "name": "沈鹤年",
+    "aliases": [
+     "沈老"
+    ],
+    "voice": {
+     "语气": "慢，爱用反问",
+     "口头禅": [
+      "你说呢"
+     ],
+     "禁用词": [
+      "综上所述"
+     ]
+    },
+    "first": 1,
+    "importance": 0.9
+   },
+   {
+    "id": "c3",
+    "name": "苏见月",
+    "aliases": [
+     "小月",
+     "苏师姐"
+    ],
+    "voice": {
+     "语气": "短促，带刺",
+     "口头禅": [
+      "废话"
+     ],
+     "禁用词": [
+      "抱歉"
+     ]
+    },
+    "first": 180,
+    "importance": 0.85
+   },
+   {
+    "id": "c4",
+    "name": "陆无咎",
+    "aliases": [
+     "陆老魔"
+    ],
+    "voice": {
+     "语气": "拖长音，阴阳怪气",
+     "口头禅": [
+      "有意思"
+     ],
+     "禁用词": [
+      "谢谢"
+     ]
+    },
+    "first": 900,
+    "importance": 0.7
+   },
+   {
+    "id": "c5",
+    "name": "白蘅",
+    "aliases": [
+     "白姑娘"
+    ],
+    "voice": {
+     "语气": "轻，几乎不表态",
+     "口头禅": [
+      "……"
+     ],
+     "禁用词": [
+      "我保证"
+     ]
+    },
+    "first": 2100,
+    "importance": 0.6
+   },
+   {
+    "id": "c6",
+    "name": "天枢",
+    "aliases": [
+     "神使天枢"
+    ],
+    "voice": {
+     "语气": "无起伏，像念判词",
+     "口头禅": [
+      "依律"
+     ],
+     "禁用词": [
+      "也许"
+     ]
+    },
+    "first": 4300,
+    "importance": 0.5
+   },
+   {
+    "id": "c7",
+    "name": "林小满",
+    "aliases": [
+     "小满",
+     "满儿"
+    ],
+    "voice": {
+     "语气": "直白，爱抱怨，说话带青牛镇口音",
+     "句长": "短",
+     "口头禅": [
+      "哥",
+      "你别管",
+      "真的假的"
+     ],
+     "禁用词": [
+      "在下",
+      "本座",
+      "道友"
+     ],
+     "自称": "我"
+    },
+    "first": 1,
+    "importance": 0.7
+   },
+   {
+    "id": "c8",
+    "name": "玄冥",
+    "aliases": [
+     "玄冥老祖"
+    ],
+    "voice": {
+     "语气": "平，慢，从不用感叹句",
+     "句长": "中",
+     "口头禅": [
+      "哦",
+      "继续"
+     ],
+     "禁用词": [
+      "啊",
+      "呀",
+      "呢"
+     ],
+     "自称": "本尊"
+    },
+    "first": 1700,
+    "importance": 0.65
+   }
+  ],
+  "facts": [
+   {
+    "entity": "c1",
+    "key": "左眉骨",
+    "value": "一道三厘米的旧疤",
+    "from": 1,
+    "to": null,
+    "immutable": true
+   },
+   {
+    "entity": "c2",
+    "key": "右手",
+    "value": "缺了半截小指",
+    "from": 1,
+    "to": null,
+    "immutable": true
+   },
+   {
+    "entity": "c3",
+    "key": "左耳",
+    "value": "耳垂上有个豁口",
+    "from": 180,
+    "to": null,
+    "immutable": true
+   },
+   {
+    "entity": "c4",
+    "key": "嗓音",
+    "value": "被雷劈过，沙哑",
+    "from": 900,
+    "to": null,
+    "immutable": true
+   },
+   {
+    "entity": "c1",
+    "key": "境界",
+    "value": "炼气初期",
+    "from": 1,
+    "to": 21,
+    "immutable": false
+   },
+   {
+    "entity": "c1",
+    "key": "境界",
+    "value": "炼气中期",
+    "from": 22,
+    "to": 47,
+    "immutable": false
+   },
+   {
+    "entity": "c1",
+    "key": "境界",
+    "value": "筑基初期",
+    "from": 72,
+    "to": 100,
+    "immutable": false
+   },
+   {
+    "entity": "c1",
+    "key": "境界",
+    "value": "金丹初期",
+    "from": 168,
+    "to": 205,
+    "immutable": false
+   },
+   {
+    "entity": "c1",
+    "key": "境界",
+    "value": "化神初期",
+    "from": 441,
+    "to": 496,
+    "immutable": false
+   },
+   {
+    "entity": "c1",
+    "key": "境界",
+    "value": "渡劫初期",
+    "from": 1313,
+    "to": 1405,
+    "immutable": false
+   },
+   {
+    "entity": "c1",
+    "key": "境界",
+    "value": "灵徒初期",
+    "from": 1601,
+    "to": 1618,
+    "immutable": false
+   },
+   {
+    "entity": "c1",
+    "key": "境界",
+    "value": "灵尊初期",
+    "from": 1989,
+    "to": 2037,
+    "immutable": false
+   },
+   {
+    "entity": "c1",
+    "key": "境界",
+    "value": "散仙初期",
+    "from": 3001,
+    "to": 3015,
+    "immutable": false
+   },
+   {
+    "entity": "c1",
+    "key": "境界",
+    "value": "大罗初期",
+    "from": 3467,
+    "to": 3515,
+    "immutable": false
+   },
+   {
+    "entity": "c1",
+    "key": "境界",
+    "value": "神人初期",
+    "from": 4201,
+    "to": 4210,
+    "immutable": false
+   },
+   {
+    "entity": "c1",
+    "key": "境界",
+    "value": "神主后期",
+    "from": 4953,
+    "to": 5000,
+    "immutable": false
+   },
+   {
+    "entity": "c1",
+    "key": "右臂",
+    "value": "断，接不上了",
+    "from": 2100,
+    "to": 2400,
+    "immutable": false
+   },
+   {
+    "entity": "c1",
+    "key": "右臂",
+    "value": "已愈，但阴雨天会疼",
+    "from": 2401,
+    "to": null,
+    "immutable": false
+   },
+   {
+    "entity": "c1",
+    "key": "所在",
+    "value": "青牛镇",
+    "from": 1,
+    "to": 150,
+    "immutable": false
+   },
+   {
+    "entity": "c1",
+    "key": "所在",
+    "value": "灵界·浮屠域",
+    "from": 1601,
+    "to": 3000,
+    "immutable": false
+   },
+   {
+    "entity": "c1",
+    "key": "所在",
+    "value": "神界·中枢",
+    "from": 4201,
+    "to": null,
+    "immutable": false
+   },
+   {
+    "entity": "c2",
+    "key": "身份",
+    "value": "青牛镇教书先生",
+    "from": 1,
+    "to": 1200,
+    "immutable": false
+   },
+   {
+    "entity": "c2",
+    "key": "身份",
+    "value": "灵界·浮屠域接引使",
+    "from": 1601,
+    "to": 2800,
+    "immutable": false
+   },
+   {
+    "entity": "c2",
+    "key": "身份",
+    "value": "神界·叛神",
+    "from": 4201,
+    "to": null,
+    "immutable": false
+   },
+   {
+    "entity": "c3",
+    "key": "关系",
+    "value": "同门师姐",
+    "from": 180,
+    "to": 1400,
+    "immutable": false
+   },
+   {
+    "entity": "c3",
+    "key": "关系",
+    "value": "道侣",
+    "from": 1401,
+    "to": 2600,
+    "immutable": false
+   },
+   {
+    "entity": "c3",
+    "key": "关系",
+    "value": "已死（第 2600 章）",
+    "from": 2601,
+    "to": null,
+    "immutable": false
+   },
+   {
+    "entity": "c4",
+    "key": "状态",
+    "value": "敌对",
+    "from": 900,
+    "to": 2000,
+    "immutable": false
+   },
+   {
+    "entity": "c4",
+    "key": "状态",
+    "value": "盟友",
+    "from": 2001,
+    "to": 3300,
+    "immutable": false
+   },
+   {
+    "entity": "c4",
+    "key": "状态",
+    "value": "敌对（背叛）",
+    "from": 3301,
+    "to": null,
+    "immutable": false
+   },
+   {
+    "entity": "c7",
+    "key": "右手",
+    "value": "小指少了一节，小时候被门夹的",
+    "from": 1,
+    "to": null,
+    "immutable": true
+   },
+   {
+    "entity": "c8",
+    "key": "身高",
+    "value": "两丈有余，站在人前像一堵墙",
+    "from": 1700,
+    "to": null,
+    "immutable": true
+   }
+  ],
+  "foreshadows": [
+   {
+    "id": "f1",
+    "content": "沈鹤年右手缺指，他说是年轻时被机器咬的",
+    "planted": 100,
+    "lo": 3000,
+    "hi": 3100,
+    "weight": 1.0
+   },
+   {
+    "id": "f2",
+    "content": "母亲留下的铜镜背面刻着一行看不懂的字",
+    "planted": 450,
+    "lo": 1500,
+    "hi": 1600,
+    "weight": 0.8
+   },
+   {
+    "id": "f3",
+    "content": "陆无咎说过「界壁不是墙，是筛子」",
+    "planted": 980,
+    "lo": 3300,
+    "hi": 3400,
+    "weight": 0.9
+   },
+   {
+    "id": "f4",
+    "content": "断臂后梦里总有人叫他去西边",
+    "planted": 2100,
+    "lo": 2400,
+    "hi": 2500,
+    "weight": 0.6
+   },
+   {
+    "id": "f5",
+    "content": "天枢称林昭为「第二位」",
+    "planted": 4200,
+    "lo": 4900,
+    "hi": 4990,
+    "weight": 1.0
+   }
+  ],
+  "rules": [
+   "境界共四界三十六境，每境三阶（初期/中期/后期），共一百零八阶。",
+   "境界不可跳级。可以借外力短时爆发，但事后必然反噬。",
+   "跨界飞升会受界壁压制，境界暂时跌落至新界底层，需重新攀升。",
+   "死者不可复生。任何复活情节都是设定错误。",
+   "神格唯一。同一神格不能同时存在两个持有者。"
+  ],
+  "timeline": [
+   [
+    1,
+    "人界·青牛镇 · 春"
+   ],
+   [
+    441,
+    "人界·化神 · 三年后"
+   ],
+   [
+    1601,
+    "灵界·初临 · 界壁压制"
+   ],
+   [
+    3001,
+    "仙界·散仙 · 百年后"
+   ],
+   [
+    4201,
+    "神界·神人 · 劫后"
+   ],
+   [
+    4953,
+    "神界·终局 · 神主"
+   ]
+  ]
+ },
+ "cast": [
+  {
+   "id": "c1",
+   "name": "林昭",
+   "aliases": [
+    "小林",
+    "昭哥",
+    "林兄"
+   ],
+   "role": "主角",
+   "gender": "男",
+   "spirit_root": "五灵根（后化五行大道）",
+   "origin": "人界·青牛镇，铁匠之子",
+   "first_appear": 1,
+   "last_appear": 5000,
+   "importance": 1.0,
+   "voice": {
+    "语气": "冷硬，少废话，情绪从不外露",
+    "句长": "短",
+    "口头禅": [
+     "嗯",
+     "走",
+     "不用"
+    ],
+    "禁用词": [
+     "其实",
+     "或许",
+     "我觉得"
+    ],
+    "自称": "我"
+   },
+   "arc": "从只想让家人活下去，到愿意为不相干的人去死",
+   "relationships": {
+    "c2": "师父（第 3 章拜师）",
+    "c3": "同门→道侣（第 1401 章确立）",
+    "c4": "宿敌→盟友→死敌",
+    "c7": "妹妹",
+    "c5": "仙界引路人（第3001章）",
+    "c6": "审判者（第4201章）",
+    "c8": "灵界大敌（第1700章）"
+   },
+   "immutable": {
+    "左眉骨": "一道三厘米的旧疤，三岁时磕在铁砧上",
+    "左手": "虎口有厚茧，打铁留下的"
+   },
+   "milestones": [
+    {
+     "chapter": 1,
+     "level_index": 1,
+     "level": "炼气初期",
+     "note": "炼气初期"
+    },
+    {
+     "chapter": 22,
+     "level_index": 2,
+     "level": "炼气中期",
+     "note": "炼气中期"
+    },
+    {
+     "chapter": 46,
+     "level_index": 3,
+     "level": "炼气后期",
+     "note": "炼气后期"
+    },
+    {
+     "chapter": 72,
+     "level_index": 4,
+     "level": "筑基初期",
+     "note": "筑基初期"
+    },
+    {
+     "chapter": 101,
+     "level_index": 5,
+     "level": "筑基中期",
+     "note": "筑基中期"
+    },
+    {
+     "chapter": 133,
+     "level_index": 6,
+     "level": "筑基后期",
+     "note": "筑基后期"
+    },
+    {
+     "chapter": 168,
+     "level_index": 7,
+     "level": "金丹初期",
+     "note": "金丹初期"
+    },
+    {
+     "chapter": 206,
+     "level_index": 8,
+     "level": "金丹中期",
+     "note": "金丹中期"
+    },
+    {
+     "chapter": 247,
+     "level_index": 9,
+     "level": "金丹后期",
+     "note": "金丹后期"
+    },
+    {
+     "chapter": 291,
+     "level_index": 10,
+     "level": "元婴初期",
+     "note": "元婴初期"
+    },
+    {
+     "chapter": 338,
+     "level_index": 11,
+     "level": "元婴中期",
+     "note": "元婴中期"
+    },
+    {
+     "chapter": 388,
+     "level_index": 12,
+     "level": "元婴后期",
+     "note": "元婴后期"
+    },
+    {
+     "chapter": 441,
+     "level_index": 13,
+     "level": "化神初期",
+     "note": "化神初期"
+    },
+    {
+     "chapter": 497,
+     "level_index": 14,
+     "level": "化神中期",
+     "note": "化神中期"
+    },
+    {
+     "chapter": 556,
+     "level_index": 15,
+     "level": "化神后期",
+     "note": "化神后期"
+    },
+    {
+     "chapter": 618,
+     "level_index": 16,
+     "level": "炼虚初期",
+     "note": "炼虚初期"
+    },
+    {
+     "chapter": 683,
+     "level_index": 17,
+     "level": "炼虚中期",
+     "note": "炼虚中期"
+    },
+    {
+     "chapter": 751,
+     "level_index": 18,
+     "level": "炼虚后期",
+     "note": "炼虚后期"
+    },
+    {
+     "chapter": 822,
+     "level_index": 19,
+     "level": "合体初期",
+     "note": "合体初期"
+    },
+    {
+     "chapter": 896,
+     "level_index": 20,
+     "level": "合体中期",
+     "note": "合体中期"
+    },
+    {
+     "chapter": 973,
+     "level_index": 21,
+     "level": "合体后期",
+     "note": "合体后期"
+    },
+    {
+     "chapter": 1053,
+     "level_index": 22,
+     "level": "大乘初期",
+     "note": "大乘初期"
+    },
+    {
+     "chapter": 1136,
+     "level_index": 23,
+     "level": "大乘中期",
+     "note": "大乘中期"
+    },
+    {
+     "chapter": 1223,
+     "level_index": 24,
+     "level": "大乘后期",
+     "note": "大乘后期"
+    },
+    {
+     "chapter": 1313,
+     "level_index": 25,
+     "level": "渡劫初期",
+     "note": "渡劫初期"
+    },
+    {
+     "chapter": 1406,
+     "level_index": 26,
+     "level": "渡劫中期",
+     "note": "渡劫中期"
+    },
+    {
+     "chapter": 1502,
+     "level_index": 27,
+     "level": "渡劫后期",
+     "note": "渡劫后期"
+    },
+    {
+     "chapter": 1601,
+     "level_index": 28,
+     "level": "灵徒初期",
+     "note": "灵徒初期"
+    },
+    {
+     "chapter": 1619,
+     "level_index": 29,
+     "level": "灵徒中期",
+     "note": "灵徒中期"
+    },
+    {
+     "chapter": 1640,
+     "level_index": 30,
+     "level": "灵徒后期",
+     "note": "灵徒后期"
+    },
+    {
+     "chapter": 1663,
+     "level_index": 31,
+     "level": "灵师初期",
+     "note": "灵师初期"
+    },
+    {
+     "chapter": 1689,
+     "level_index": 32,
+     "level": "灵师中期",
+     "note": "灵师中期"
+    },
+    {
+     "chapter": 1717,
+     "level_index": 33,
+     "level": "灵师后期",
+     "note": "灵师后期"
+    },
+    {
+     "chapter": 1748,
+     "level_index": 34,
+     "level": "灵王初期",
+     "note": "灵王初期"
+    },
+    {
+     "chapter": 1782,
+     "level_index": 35,
+     "level": "灵王中期",
+     "note": "灵王中期"
+    },
+    {
+     "chapter": 1818,
+     "level_index": 36,
+     "level": "灵王后期",
+     "note": "灵王后期"
+    },
+    {
+     "chapter": 1857,
+     "level_index": 37,
+     "level": "灵皇初期",
+     "note": "灵皇初期"
+    },
+    {
+     "chapter": 1898,
+     "level_index": 38,
+     "level": "灵皇中期",
+     "note": "灵皇中期"
+    },
+    {
+     "chapter": 1942,
+     "level_index": 39,
+     "level": "灵皇后期",
+     "note": "灵皇后期"
+    },
+    {
+     "chapter": 1989,
+     "level_index": 40,
+     "level": "灵尊初期",
+     "note": "灵尊初期"
+    },
+    {
+     "chapter": 2038,
+     "level_index": 41,
+     "level": "灵尊中期",
+     "note": "灵尊中期"
+    },
+    {
+     "chapter": 2090,
+     "level_index": 42,
+     "level": "灵尊后期",
+     "note": "灵尊后期"
+    },
+    {
+     "chapter": 2144,
+     "level_index": 43,
+     "level": "灵圣初期",
+     "note": "灵圣初期"
+    },
+    {
+     "chapter": 2201,
+     "level_index": 44,
+     "level": "灵圣中期",
+     "note": "灵圣中期"
+    },
+    {
+     "chapter": 2261,
+     "level_index": 45,
+     "level": "灵圣后期",
+     "note": "灵圣后期"
+    },
+    {
+     "chapter": 2323,
+     "level_index": 46,
+     "level": "灵帝初期",
+     "note": "灵帝初期"
+    },
+    {
+     "chapter": 2388,
+     "level_index": 47,
+     "level": "灵帝中期",
+     "note": "灵帝中期"
+    },
+    {
+     "chapter": 2455,
+     "level_index": 48,
+     "level": "灵帝后期",
+     "note": "灵帝后期"
+    },
+    {
+     "chapter": 2525,
+     "level_index": 49,
+     "level": "灵祖初期",
+     "note": "灵祖初期"
+    },
+    {
+     "chapter": 2598,
+     "level_index": 50,
+     "level": "灵祖中期",
+     "note": "灵祖中期"
+    },
+    {
+     "chapter": 2673,
+     "level_index": 51,
+     "level": "灵祖后期",
+     "note": "灵祖后期"
+    },
+    {
+     "chapter": 2751,
+     "level_index": 52,
+     "level": "灵源初期",
+     "note": "灵源初期"
+    },
+    {
+     "chapter": 2832,
+     "level_index": 53,
+     "level": "灵源中期",
+     "note": "灵源中期"
+    },
+    {
+     "chapter": 2915,
+     "level_index": 54,
+     "level": "灵源后期",
+     "note": "灵源后期"
+    },
+    {
+     "chapter": 3001,
+     "level_index": 55,
+     "level": "散仙初期",
+     "note": "散仙初期"
+    },
+    {
+     "chapter": 3016,
+     "level_index": 56,
+     "level": "散仙中期",
+     "note": "散仙中期"
+    },
+    {
+     "chapter": 3034,
+     "level_index": 57,
+     "level": "散仙后期",
+     "note": "散仙后期"
+    },
+    {
+     "chapter": 3054,
+     "level_index": 58,
+     "level": "真仙初期",
+     "note": "真仙初期"
+    },
+    {
+     "chapter": 3076,
+     "level_index": 59,
+     "level": "真仙中期",
+     "note": "真仙中期"
+    },
+    {
+     "chapter": 3100,
+     "level_index": 60,
+     "level": "真仙后期",
+     "note": "真仙后期"
+    },
+    {
+     "chapter": 3127,
+     "level_index": 61,
+     "level": "玄仙初期",
+     "note": "玄仙初期"
+    },
+    {
+     "chapter": 3156,
+     "level_index": 62,
+     "level": "玄仙中期",
+     "note": "玄仙中期"
+    },
+    {
+     "chapter": 3187,
+     "level_index": 63,
+     "level": "玄仙后期",
+     "note": "玄仙后期"
+    },
+    {
+     "chapter": 3220,
+     "level_index": 64,
+     "level": "金仙初期",
+     "note": "金仙初期"
+    },
+    {
+     "chapter": 3256,
+     "level_index": 65,
+     "level": "金仙中期",
+     "note": "金仙中期"
+    },
+    {
+     "chapter": 3294,
+     "level_index": 66,
+     "level": "金仙后期",
+     "note": "金仙后期"
+    },
+    {
+     "chapter": 3334,
+     "level_index": 67,
+     "level": "太乙初期",
+     "note": "太乙初期"
+    },
+    {
+     "chapter": 3376,
+     "level_index": 68,
+     "level": "太乙中期",
+     "note": "太乙中期"
+    },
+    {
+     "chapter": 3420,
+     "level_index": 69,
+     "level": "太乙后期",
+     "note": "太乙后期"
+    },
+    {
+     "chapter": 3467,
+     "level_index": 70,
+     "level": "大罗初期",
+     "note": "大罗初期"
+    },
+    {
+     "chapter": 3516,
+     "level_index": 71,
+     "level": "大罗中期",
+     "note": "大罗中期"
+    },
+    {
+     "chapter": 3567,
+     "level_index": 72,
+     "level": "大罗后期",
+     "note": "大罗后期"
+    },
+    {
+     "chapter": 3620,
+     "level_index": 73,
+     "level": "混元初期",
+     "note": "混元初期"
+    },
+    {
+     "chapter": 3676,
+     "level_index": 74,
+     "level": "混元中期",
+     "note": "混元中期"
+    },
+    {
+     "chapter": 3734,
+     "level_index": 75,
+     "level": "混元后期",
+     "note": "混元后期"
+    },
+    {
+     "chapter": 3794,
+     "level_index": 76,
+     "level": "准圣初期",
+     "note": "准圣初期"
+    },
+    {
+     "chapter": 3856,
+     "level_index": 77,
+     "level": "准圣中期",
+     "note": "准圣中期"
+    },
+    {
+     "chapter": 3921,
+     "level_index": 78,
+     "level": "准圣后期",
+     "note": "准圣后期"
+    },
+    {
+     "chapter": 3988,
+     "level_index": 79,
+     "level": "天道初期",
+     "note": "天道初期"
+    },
+    {
+     "chapter": 4057,
+     "level_index": 80,
+     "level": "天道中期",
+     "note": "天道中期"
+    },
+    {
+     "chapter": 4128,
+     "level_index": 81,
+     "level": "天道后期",
+     "note": "天道后期"
+    },
+    {
+     "chapter": 4201,
+     "level_index": 82,
+     "level": "神人初期",
+     "note": "神人初期"
+    },
+    {
+     "chapter": 4211,
+     "level_index": 83,
+     "level": "神人中期",
+     "note": "神人中期"
+    },
+    {
+     "chapter": 4223,
+     "level_index": 84,
+     "level": "神人后期",
+     "note": "神人后期"
+    },
+    {
+     "chapter": 4236,
+     "level_index": 85,
+     "level": "神使初期",
+     "note": "神使初期"
+    },
+    {
+     "chapter": 4251,
+     "level_index": 86,
+     "level": "神使中期",
+     "note": "神使中期"
+    },
+    {
+     "chapter": 4267,
+     "level_index": 87,
+     "level": "神使后期",
+     "note": "神使后期"
+    },
+    {
+     "chapter": 4285,
+     "level_index": 88,
+     "level": "神将初期",
+     "note": "神将初期"
+    },
+    {
+     "chapter": 4304,
+     "level_index": 89,
+     "level": "神将中期",
+     "note": "神将中期"
+    },
+    {
+     "chapter": 4325,
+     "level_index": 90,
+     "level": "神将后期",
+     "note": "神将后期"
+    },
+    {
+     "chapter": 4347,
+     "level_index": 91,
+     "level": "神君初期",
+     "note": "神君初期"
+    },
+    {
+     "chapter": 4371,
+     "level_index": 92,
+     "level": "神君中期",
+     "note": "神君中期"
+    },
+    {
+     "chapter": 4396,
+     "level_index": 93,
+     "level": "神君后期",
+     "note": "神君后期"
+    },
+    {
+     "chapter": 4423,
+     "level_index": 94,
+     "level": "神王初期",
+     "note": "神王初期"
+    },
+    {
+     "chapter": 4451,
+     "level_index": 95,
+     "level": "神王中期",
+     "note": "神王中期"
+    },
+    {
+     "chapter": 4481,
+     "level_index": 96,
+     "level": "神王后期",
+     "note": "神王后期"
+    },
+    {
+     "chapter": 4512,
+     "level_index": 97,
+     "level": "神皇初期",
+     "note": "神皇初期"
+    },
+    {
+     "chapter": 4545,
+     "level_index": 98,
+     "level": "神皇中期",
+     "note": "神皇中期"
+    },
+    {
+     "chapter": 4579,
+     "level_index": 99,
+     "level": "神皇后期",
+     "note": "神皇后期"
+    },
+    {
+     "chapter": 4615,
+     "level_index": 100,
+     "level": "神帝初期",
+     "note": "神帝初期"
+    },
+    {
+     "chapter": 4652,
+     "level_index": 101,
+     "level": "神帝中期",
+     "note": "神帝中期"
+    },
+    {
+     "chapter": 4691,
+     "level_index": 102,
+     "level": "神帝后期",
+     "note": "神帝后期"
+    },
+    {
+     "chapter": 4731,
+     "level_index": 103,
+     "level": "神尊初期",
+     "note": "神尊初期"
+    },
+    {
+     "chapter": 4773,
+     "level_index": 104,
+     "level": "神尊中期",
+     "note": "神尊中期"
+    },
+    {
+     "chapter": 4816,
+     "level_index": 105,
+     "level": "神尊后期",
+     "note": "神尊后期"
+    },
+    {
+     "chapter": 4861,
+     "level_index": 106,
+     "level": "神主初期",
+     "note": "神主初期"
+    },
+    {
+     "chapter": 4907,
+     "level_index": 107,
+     "level": "神主中期",
+     "note": "神主中期"
+    },
+    {
+     "chapter": 4953,
+     "level_index": 108,
+     "level": "神主后期",
+     "note": "神主后期"
+    }
+   ]
+  },
+  {
+   "id": "c2",
+   "name": "沈鹤年",
+   "aliases": [
+    "沈老",
+    "沈先生",
+    "老沈"
+   ],
+   "role": "师父",
+   "gender": "男",
+   "spirit_root": "单灵根（水）",
+   "origin": "人界·青牛镇教书先生，真实身份是灵界贬谪者",
+   "first_appear": 1,
+   "last_appear": 5000,
+   "importance": 0.95,
+   "voice": {
+    "语气": "慢，爱用反问，从不下判断句",
+    "句长": "长",
+    "口头禅": [
+     "你说呢",
+     "未必",
+     "急什么"
+    ],
+    "禁用词": [
+     "综上所述",
+     "必然",
+     "一定"
+    ],
+    "自称": "老夫（对外）/ 我（对林昭）"
+   },
+   "arc": "从守护者，到被自己的守护所背叛",
+   "relationships": {
+    "c1": "徒弟",
+    "c4": "旧识（灵界同期）",
+    "c6": "旧主"
+   },
+   "immutable": {
+    "右手": "缺了半截小指，说是年轻时被机器咬的（真实原因第 3050 章揭晓）",
+    "左眼": "瞳孔是灰的，看不见东西"
+   },
+   "milestones": [
+    {
+     "chapter": 1,
+     "level_index": 21,
+     "level": "合体后期",
+     "note": "隐居青牛镇，压制修为"
+    },
+    {
+     "chapter": 600,
+     "level_index": 24,
+     "level": "大乘后期",
+     "note": "为护林昭暴露实力"
+    },
+    {
+     "chapter": 1200,
+     "level_index": 27,
+     "level": "渡劫后期",
+     "note": "人界巅峰"
+    },
+    {
+     "chapter": 1601,
+     "level_index": 41,
+     "level": "灵尊中期",
+     "note": "重返灵界，任接引使"
+    },
+    {
+     "chapter": 2400,
+     "level_index": 48,
+     "level": "灵帝后期",
+     "note": "掌浮屠域"
+    },
+    {
+     "chapter": 3200,
+     "level_index": 68,
+     "level": "太乙中期",
+     "note": "入仙界"
+    },
+    {
+     "chapter": 4000,
+     "level_index": 78,
+     "level": "准圣后期",
+     "note": ""
+    },
+    {
+     "chapter": 4201,
+     "level_index": 89,
+     "level": "神将中期",
+     "note": "入神界"
+    },
+    {
+     "chapter": 4600,
+     "level_index": 99,
+     "level": "神皇后期",
+     "note": "叛神，与林昭决裂"
+    },
+    {
+     "chapter": 4990,
+     "level_index": 105,
+     "level": "神尊后期",
+     "note": ""
+    }
+   ]
+  },
+  {
+   "id": "c3",
+   "name": "苏见月",
+   "aliases": [
+    "小月",
+    "苏师姐",
+    "见月"
+   ],
+   "role": "道侣",
+   "gender": "女",
+   "spirit_root": "变异灵根（冰）",
+   "origin": "人界·玄霜宗内门弟子",
+   "first_appear": 180,
+   "last_appear": 2600,
+   "importance": 0.9,
+   "voice": {
+    "语气": "短促，带刺，越亲近越刻薄",
+    "句长": "短",
+    "口头禅": [
+     "废话",
+     "闭嘴",
+     "烦"
+    ],
+    "禁用词": [
+     "抱歉",
+     "对不起",
+     "谢谢"
+    ],
+    "自称": "我"
+   },
+   "arc": "从只信自己，到愿意把命交出去",
+   "relationships": {
+    "c1": "同门→道侣",
+    "c4": "厌恶（第 3300 章后林昭才知原因）"
+   },
+   "immutable": {
+    "左耳": "耳垂上有个豁口，小时候被师父打的"
+   },
+   "milestones": [
+    {
+     "chapter": 180,
+     "level_index": 7,
+     "level": "金丹初期",
+     "note": "登场，比林昭高一阶"
+    },
+    {
+     "chapter": 400,
+     "level_index": 12,
+     "level": "元婴后期",
+     "note": ""
+    },
+    {
+     "chapter": 900,
+     "level_index": 20,
+     "level": "合体中期",
+     "note": ""
+    },
+    {
+     "chapter": 1401,
+     "level_index": 25,
+     "level": "渡劫初期",
+     "note": "与林昭确立道侣"
+    },
+    {
+     "chapter": 2000,
+     "level_index": 38,
+     "level": "灵皇中期",
+     "note": ""
+    },
+    {
+     "chapter": 2400,
+     "level_index": 47,
+     "level": "灵帝中期",
+     "note": "为护林昭重伤"
+    },
+    {
+     "chapter": 2600,
+     "level_index": 50,
+     "level": "灵祖中期",
+     "note": "身死（不可复活）"
+    }
+   ]
+  },
+  {
+   "id": "c4",
+   "name": "陆无咎",
+   "aliases": [
+    "陆老魔",
+    "无咎道人"
+   ],
+   "role": "宿敌",
+   "gender": "男",
+   "spirit_root": "五灵根（伪）",
+   "origin": "人界·散修，靠夺舍续命",
+   "first_appear": 900,
+   "last_appear": 5000,
+   "importance": 0.85,
+   "voice": {
+    "语气": "拖长音，阴阳怪气，爱用敬语说狠话",
+    "句长": "中",
+    "口头禅": [
+     "有意思",
+     "请吧",
+     "恕不奉陪"
+    ],
+    "禁用词": [
+     "谢谢",
+     "感激"
+    ],
+    "自称": "在下 / 本座"
+   },
+   "arc": "从纯粹的恶，到证明自己也曾想过善",
+   "relationships": {
+    "c1": "宿敌",
+    "c2": "旧识",
+    "c3": "杀她师父的人（第3300章揭晓）",
+    "c8": "旧盟"
+   },
+   "immutable": {
+    "嗓音": "被雷劈过，沙哑得听不出年纪"
+   },
+   "milestones": [
+    {
+     "chapter": 900,
+     "level_index": 24,
+     "level": "大乘后期",
+     "note": "登场，碾压林昭"
+    },
+    {
+     "chapter": 1601,
+     "level_index": 47,
+     "level": "灵帝中期",
+     "note": "在灵界重新崛起"
+    },
+    {
+     "chapter": 2400,
+     "level_index": 53,
+     "level": "灵源中期",
+     "note": ""
+    },
+    {
+     "chapter": 3001,
+     "level_index": 68,
+     "level": "太乙中期",
+     "note": ""
+    },
+    {
+     "chapter": 3700,
+     "level_index": 79,
+     "level": "天道初期",
+     "note": ""
+    },
+    {
+     "chapter": 4201,
+     "level_index": 98,
+     "level": "神皇中期",
+     "note": ""
+    },
+    {
+     "chapter": 4800,
+     "level_index": 105,
+     "level": "神尊后期",
+     "note": "最终对决"
+    }
+   ]
+  },
+  {
+   "id": "c5",
+   "name": "白蘅",
+   "aliases": [
+    "白姑娘",
+    "蘅娘"
+   ],
+   "role": "引路人",
+   "gender": "女",
+   "spirit_root": "单灵根（风）",
+   "origin": "仙界·散仙，被夺仙位后流落",
+   "first_appear": 3001,
+   "last_appear": 4200,
+   "importance": 0.6,
+   "voice": {
+    "语气": "轻，几乎不表态，句子常不完整",
+    "句长": "短",
+    "口头禅": [
+     "……",
+     "也许吧"
+    ],
+    "禁用词": [
+     "我保证",
+     "一定",
+     "肯定"
+    ],
+    "自称": "我"
+   },
+   "arc": "从不敢选，到第一次替别人做了选择",
+   "relationships": {
+    "c1": "引路人"
+   },
+   "immutable": {
+    "脖子": "有一圈淡青色的痕，像被什么勒过"
+   },
+   "milestones": [
+    {
+     "chapter": 3001,
+     "level_index": 68,
+     "level": "太乙中期",
+     "note": "比林昭高 13 阶"
+    },
+    {
+     "chapter": 3600,
+     "level_index": 72,
+     "level": "大罗后期",
+     "note": ""
+    },
+    {
+     "chapter": 4200,
+     "level_index": 78,
+     "level": "准圣后期",
+     "note": "为林昭挡下天道一击，消散"
+    }
+   ]
+  },
+  {
+   "id": "c6",
+   "name": "天枢",
+   "aliases": [
+    "神使天枢",
+    "枢"
+   ],
+   "role": "最终反派",
+   "gender": "不明",
+   "spirit_root": "无（神格持有者）",
+   "origin": "神界·中枢，神界法则的执行者",
+   "first_appear": 4201,
+   "last_appear": 5000,
+   "importance": 0.8,
+   "voice": {
+    "语气": "无起伏，像念判词，从不用第二人称",
+    "句长": "中",
+    "口头禅": [
+     "依律",
+     "此非汝所能问"
+    ],
+    "禁用词": [
+     "也许",
+     "或许",
+     "我想"
+    ],
+    "自称": "吾"
+   },
+   "arc": "从法则的化身，到发现自己也是法则的囚徒",
+   "relationships": {
+    "c2": "旧主",
+    "c1": "审判对象"
+   },
+   "immutable": {
+    "面容": "永远看不清，看久了会头痛"
+   },
+   "milestones": [
+    {
+     "chapter": 4201,
+     "level_index": 89,
+     "level": "神将中期",
+     "note": "比林昭高 7 阶"
+    },
+    {
+     "chapter": 4600,
+     "level_index": 96,
+     "level": "神王后期",
+     "note": ""
+    },
+    {
+     "chapter": 4900,
+     "level_index": 104,
+     "level": "神尊中期",
+     "note": ""
+    },
+    {
+     "chapter": 4990,
+     "level_index": 105,
+     "level": "神尊后期",
+     "note": ""
+    },
+    {
+     "chapter": 5000,
+     "level_index": 108,
+     "level": "神主后期",
+     "note": "最终对决"
+    }
+   ]
+  },
+  {
+   "id": "c7",
+   "name": "林小满",
+   "aliases": [
+    "小满",
+    "满儿"
+   ],
+   "role": "亲人",
+   "gender": "女",
+   "spirit_root": "无（凡人）",
+   "origin": "人界·青牛镇，林昭之妹",
+   "first_appear": 1,
+   "last_appear": 1650,
+   "importance": 0.7,
+   "voice": {
+    "语气": "直白，爱抱怨，说话带青牛镇口音",
+    "句长": "短",
+    "口头禅": [
+     "哥",
+     "你别管",
+     "真的假的"
+    ],
+    "禁用词": [
+     "在下",
+     "本座",
+     "道友"
+    ],
+    "自称": "我"
+   },
+   "arc": "凡人的一生，是林昭修道路上永远的锚",
+   "relationships": {
+    "c1": "哥哥"
+   },
+   "immutable": {
+    "右手": "小指少了一节，小时候被门夹的"
+   },
+   "milestones": [
+    {
+     "chapter": 1,
+     "level_index": 1,
+     "level": "炼气初期",
+     "note": "凡人"
+    },
+    {
+     "chapter": 1650,
+     "level_index": 1,
+     "level": "炼气初期",
+     "note": "寿终（凡人寿元）"
+    }
+   ]
+  },
+  {
+   "id": "c8",
+   "name": "玄冥",
+   "aliases": [
+    "玄冥老祖"
+   ],
+   "role": "宿敌",
+   "gender": "男",
+   "spirit_root": "变异灵根（暗）",
+   "origin": "灵界·暗域之主",
+   "first_appear": 1700,
+   "last_appear": 3000,
+   "importance": 0.65,
+   "voice": {
+    "语气": "平，慢，从不用感叹句",
+    "句长": "中",
+    "口头禅": [
+     "哦",
+     "继续"
+    ],
+    "禁用词": [
+     "啊",
+     "呀",
+     "呢"
+    ],
+    "自称": "本尊"
+   },
+   "arc": "纯粹的强，用来量出主角走了多远",
+   "relationships": {
+    "c4": "旧盟",
+    "c1": "猎物（第1700章）"
+   },
+   "immutable": {
+    "身高": "两丈有余，站在人前像一堵墙"
+   },
+   "milestones": [
+    {
+     "chapter": 1700,
+     "level_index": 38,
+     "level": "灵皇中期",
+     "note": "比林昭高 6 阶"
+    },
+    {
+     "chapter": 2400,
+     "level_index": 49,
+     "level": "灵祖初期",
+     "note": ""
+    },
+    {
+     "chapter": 3000,
+     "level_index": 54,
+     "level": "灵源后期",
+     "note": "被林昭斩杀"
+    }
+   ]
+  }
+ ],
+ "book": {
+  "title": "四界",
+  "logline": "一个铁匠之子从人界杀到神界，最后亲手废掉自己成为的神。",
+  "spine": "林昭从只想让家人活下去，到愿意为不相干的人去死，最后发现唯一的办法是放弃成为神。",
+  "acts": [
+   {
+    "no": 1,
+    "name": "第一幕 · 铁匠之子",
+    "start": 1,
+    "end": 400,
+    "conflict": "活下去。父亲欠债，妹妹病重，镇上有修士收保护费。",
+    "irreversible": "林昭踏入修行，再也回不去做凡人。妹妹的时间开始倒数。",
+    "escalates": "从「没有力量」到「有力量但保护不了想保护的人」"
+   },
+   {
+    "no": 2,
+    "name": "第二幕 · 人界之巅",
+    "start": 401,
+    "end": 1600,
+    "conflict": "打得过所有人，却打不过时间。妹妹老死，师父失踪。",
+    "irreversible": "林昭亲手送走妹妹，人界再无可恋，只剩飞升一条路。",
+    "escalates": "从「打不过」到「打不得」——敌人是他不能杀的人"
+   },
+   {
+    "no": 3,
+    "name": "第三幕 · 灵界蝼蚁",
+    "start": 1601,
+    "end": 3000,
+    "conflict": "绝对战力还在，但界壁把他压成最底层。旧身份一文不值。",
+    "irreversible": "苏见月身死。林昭第一次为了复仇而修行，而不是为了守护。",
+    "escalates": "从「守护」到「复仇」——动机变了，人也就变了"
+   },
+   {
+    "no": 4,
+    "name": "第四幕 · 仙界无位",
+    "start": 3001,
+    "end": 4200,
+    "conflict": "仙位有限，得夺。夺来的仙位带着别人的因果。",
+    "irreversible": "白蘅消散。林昭继承了她的仙位，也继承了追杀她的所有人。",
+    "escalates": "从「复仇」到「背负」——他要背的不再是自己的仇"
+   },
+   {
+    "no": 5,
+    "name": "第五幕 · 神界叛徒",
+    "start": 4201,
+    "end": 4600,
+    "conflict": "师父沈鹤年是叛神。他一直在等林昭来杀他。",
+    "irreversible": "林昭亲手杀了沈鹤年。他成了自己最恨的那种人。",
+    "escalates": "从「背负」到「背叛」——他开始怀疑自己站的那一边"
+   },
+   {
+    "no": 6,
+    "name": "第六幕 · 神主",
+    "start": 4601,
+    "end": 5000,
+    "conflict": "神格唯一。要成神主，必须杀掉前任——而前任是法则本身。",
+    "irreversible": "林昭成为神主，然后废掉神格。四界重归凡人可及。",
+    "escalates": "从「成为法则」到「废掉法则」——他放弃了唯一的答案"
+   }
+  ],
+  "milestones": [
+   {
+    "chapter": 1,
+    "who": "林昭",
+    "event": "炼气初期",
+    "level": 1
+   },
+   {
+    "chapter": 1,
+    "who": "沈鹤年",
+    "event": "隐居青牛镇，压制修为",
+    "level": 21
+   },
+   {
+    "chapter": 22,
+    "who": "林昭",
+    "event": "炼气中期",
+    "level": 2
+   },
+   {
+    "chapter": 46,
+    "who": "林昭",
+    "event": "炼气后期",
+    "level": 3
+   },
+   {
+    "chapter": 72,
+    "who": "林昭",
+    "event": "筑基初期",
+    "level": 4
+   },
+   {
+    "chapter": 101,
+    "who": "林昭",
+    "event": "筑基中期",
+    "level": 5
+   },
+   {
+    "chapter": 133,
+    "who": "林昭",
+    "event": "筑基后期",
+    "level": 6
+   },
+   {
+    "chapter": 168,
+    "who": "林昭",
+    "event": "金丹初期",
+    "level": 7
+   },
+   {
+    "chapter": 180,
+    "who": "苏见月",
+    "event": "登场，比林昭高一阶",
+    "level": 7
+   },
+   {
+    "chapter": 206,
+    "who": "林昭",
+    "event": "金丹中期",
+    "level": 8
+   },
+   {
+    "chapter": 247,
+    "who": "林昭",
+    "event": "金丹后期",
+    "level": 9
+   },
+   {
+    "chapter": 291,
+    "who": "林昭",
+    "event": "元婴初期",
+    "level": 10
+   },
+   {
+    "chapter": 338,
+    "who": "林昭",
+    "event": "元婴中期",
+    "level": 11
+   },
+   {
+    "chapter": 388,
+    "who": "林昭",
+    "event": "元婴后期",
+    "level": 12
+   },
+   {
+    "chapter": 441,
+    "who": "林昭",
+    "event": "化神初期",
+    "level": 13
+   },
+   {
+    "chapter": 497,
+    "who": "林昭",
+    "event": "化神中期",
+    "level": 14
+   },
+   {
+    "chapter": 556,
+    "who": "林昭",
+    "event": "化神后期",
+    "level": 15
+   },
+   {
+    "chapter": 600,
+    "who": "沈鹤年",
+    "event": "为护林昭暴露实力",
+    "level": 24
+   },
+   {
+    "chapter": 618,
+    "who": "林昭",
+    "event": "炼虚初期",
+    "level": 16
+   },
+   {
+    "chapter": 683,
+    "who": "林昭",
+    "event": "炼虚中期",
+    "level": 17
+   },
+   {
+    "chapter": 751,
+    "who": "林昭",
+    "event": "炼虚后期",
+    "level": 18
+   },
+   {
+    "chapter": 822,
+    "who": "林昭",
+    "event": "合体初期",
+    "level": 19
+   },
+   {
+    "chapter": 896,
+    "who": "林昭",
+    "event": "合体中期",
+    "level": 20
+   },
+   {
+    "chapter": 900,
+    "who": "陆无咎",
+    "event": "登场，碾压林昭",
+    "level": 24
+   },
+   {
+    "chapter": 973,
+    "who": "林昭",
+    "event": "合体后期",
+    "level": 21
+   },
+   {
+    "chapter": 1053,
+    "who": "林昭",
+    "event": "大乘初期",
+    "level": 22
+   },
+   {
+    "chapter": 1136,
+    "who": "林昭",
+    "event": "大乘中期",
+    "level": 23
+   },
+   {
+    "chapter": 1200,
+    "who": "沈鹤年",
+    "event": "人界巅峰",
+    "level": 27
+   },
+   {
+    "chapter": 1223,
+    "who": "林昭",
+    "event": "大乘后期",
+    "level": 24
+   },
+   {
+    "chapter": 1313,
+    "who": "林昭",
+    "event": "渡劫初期",
+    "level": 25
+   },
+   {
+    "chapter": 1401,
+    "who": "苏见月",
+    "event": "与林昭确立道侣",
+    "level": 25
+   },
+   {
+    "chapter": 1406,
+    "who": "林昭",
+    "event": "渡劫中期",
+    "level": 26
+   },
+   {
+    "chapter": 1502,
+    "who": "林昭",
+    "event": "渡劫后期",
+    "level": 27
+   },
+   {
+    "chapter": 1601,
+    "who": "林昭",
+    "event": "灵徒初期",
+    "level": 28
+   },
+   {
+    "chapter": 1601,
+    "who": "沈鹤年",
+    "event": "重返灵界，任接引使",
+    "level": 41
+   },
+   {
+    "chapter": 1601,
+    "who": "陆无咎",
+    "event": "在灵界重新崛起",
+    "level": 47
+   },
+   {
+    "chapter": 1619,
+    "who": "林昭",
+    "event": "灵徒中期",
+    "level": 29
+   },
+   {
+    "chapter": 1640,
+    "who": "林昭",
+    "event": "灵徒后期",
+    "level": 30
+   },
+   {
+    "chapter": 1663,
+    "who": "林昭",
+    "event": "灵师初期",
+    "level": 31
+   },
+   {
+    "chapter": 1689,
+    "who": "林昭",
+    "event": "灵师中期",
+    "level": 32
+   },
+   {
+    "chapter": 1717,
+    "who": "林昭",
+    "event": "灵师后期",
+    "level": 33
+   },
+   {
+    "chapter": 1748,
+    "who": "林昭",
+    "event": "灵王初期",
+    "level": 34
+   },
+   {
+    "chapter": 1782,
+    "who": "林昭",
+    "event": "灵王中期",
+    "level": 35
+   },
+   {
+    "chapter": 1818,
+    "who": "林昭",
+    "event": "灵王后期",
+    "level": 36
+   },
+   {
+    "chapter": 1857,
+    "who": "林昭",
+    "event": "灵皇初期",
+    "level": 37
+   },
+   {
+    "chapter": 1898,
+    "who": "林昭",
+    "event": "灵皇中期",
+    "level": 38
+   },
+   {
+    "chapter": 1942,
+    "who": "林昭",
+    "event": "灵皇后期",
+    "level": 39
+   },
+   {
+    "chapter": 1989,
+    "who": "林昭",
+    "event": "灵尊初期",
+    "level": 40
+   },
+   {
+    "chapter": 2038,
+    "who": "林昭",
+    "event": "灵尊中期",
+    "level": 41
+   },
+   {
+    "chapter": 2090,
+    "who": "林昭",
+    "event": "灵尊后期",
+    "level": 42
+   },
+   {
+    "chapter": 2144,
+    "who": "林昭",
+    "event": "灵圣初期",
+    "level": 43
+   },
+   {
+    "chapter": 2201,
+    "who": "林昭",
+    "event": "灵圣中期",
+    "level": 44
+   },
+   {
+    "chapter": 2261,
+    "who": "林昭",
+    "event": "灵圣后期",
+    "level": 45
+   },
+   {
+    "chapter": 2323,
+    "who": "林昭",
+    "event": "灵帝初期",
+    "level": 46
+   },
+   {
+    "chapter": 2388,
+    "who": "林昭",
+    "event": "灵帝中期",
+    "level": 47
+   },
+   {
+    "chapter": 2400,
+    "who": "沈鹤年",
+    "event": "掌浮屠域",
+    "level": 48
+   },
+   {
+    "chapter": 2400,
+    "who": "苏见月",
+    "event": "为护林昭重伤",
+    "level": 47
+   },
+   {
+    "chapter": 2455,
+    "who": "林昭",
+    "event": "灵帝后期",
+    "level": 48
+   },
+   {
+    "chapter": 2525,
+    "who": "林昭",
+    "event": "灵祖初期",
+    "level": 49
+   },
+   {
+    "chapter": 2598,
+    "who": "林昭",
+    "event": "灵祖中期",
+    "level": 50
+   },
+   {
+    "chapter": 2600,
+    "who": "苏见月",
+    "event": "身死（不可复活）",
+    "level": 50
+   },
+   {
+    "chapter": 2673,
+    "who": "林昭",
+    "event": "灵祖后期",
+    "level": 51
+   },
+   {
+    "chapter": 2751,
+    "who": "林昭",
+    "event": "灵源初期",
+    "level": 52
+   },
+   {
+    "chapter": 2832,
+    "who": "林昭",
+    "event": "灵源中期",
+    "level": 53
+   },
+   {
+    "chapter": 2915,
+    "who": "林昭",
+    "event": "灵源后期",
+    "level": 54
+   },
+   {
+    "chapter": 3001,
+    "who": "林昭",
+    "event": "散仙初期",
+    "level": 55
+   },
+   {
+    "chapter": 3016,
+    "who": "林昭",
+    "event": "散仙中期",
+    "level": 56
+   },
+   {
+    "chapter": 3034,
+    "who": "林昭",
+    "event": "散仙后期",
+    "level": 57
+   },
+   {
+    "chapter": 3054,
+    "who": "林昭",
+    "event": "真仙初期",
+    "level": 58
+   },
+   {
+    "chapter": 3076,
+    "who": "林昭",
+    "event": "真仙中期",
+    "level": 59
+   },
+   {
+    "chapter": 3100,
+    "who": "林昭",
+    "event": "真仙后期",
+    "level": 60
+   },
+   {
+    "chapter": 3127,
+    "who": "林昭",
+    "event": "玄仙初期",
+    "level": 61
+   },
+   {
+    "chapter": 3156,
+    "who": "林昭",
+    "event": "玄仙中期",
+    "level": 62
+   },
+   {
+    "chapter": 3187,
+    "who": "林昭",
+    "event": "玄仙后期",
+    "level": 63
+   },
+   {
+    "chapter": 3200,
+    "who": "沈鹤年",
+    "event": "入仙界",
+    "level": 68
+   },
+   {
+    "chapter": 3220,
+    "who": "林昭",
+    "event": "金仙初期",
+    "level": 64
+   },
+   {
+    "chapter": 3256,
+    "who": "林昭",
+    "event": "金仙中期",
+    "level": 65
+   },
+   {
+    "chapter": 3294,
+    "who": "林昭",
+    "event": "金仙后期",
+    "level": 66
+   },
+   {
+    "chapter": 3334,
+    "who": "林昭",
+    "event": "太乙初期",
+    "level": 67
+   },
+   {
+    "chapter": 3376,
+    "who": "林昭",
+    "event": "太乙中期",
+    "level": 68
+   },
+   {
+    "chapter": 3420,
+    "who": "林昭",
+    "event": "太乙后期",
+    "level": 69
+   },
+   {
+    "chapter": 3467,
+    "who": "林昭",
+    "event": "大罗初期",
+    "level": 70
+   },
+   {
+    "chapter": 3516,
+    "who": "林昭",
+    "event": "大罗中期",
+    "level": 71
+   },
+   {
+    "chapter": 3567,
+    "who": "林昭",
+    "event": "大罗后期",
+    "level": 72
+   },
+   {
+    "chapter": 3620,
+    "who": "林昭",
+    "event": "混元初期",
+    "level": 73
+   },
+   {
+    "chapter": 3676,
+    "who": "林昭",
+    "event": "混元中期",
+    "level": 74
+   },
+   {
+    "chapter": 3734,
+    "who": "林昭",
+    "event": "混元后期",
+    "level": 75
+   },
+   {
+    "chapter": 3794,
+    "who": "林昭",
+    "event": "准圣初期",
+    "level": 76
+   },
+   {
+    "chapter": 3856,
+    "who": "林昭",
+    "event": "准圣中期",
+    "level": 77
+   },
+   {
+    "chapter": 3921,
+    "who": "林昭",
+    "event": "准圣后期",
+    "level": 78
+   },
+   {
+    "chapter": 3988,
+    "who": "林昭",
+    "event": "天道初期",
+    "level": 79
+   },
+   {
+    "chapter": 4057,
+    "who": "林昭",
+    "event": "天道中期",
+    "level": 80
+   },
+   {
+    "chapter": 4128,
+    "who": "林昭",
+    "event": "天道后期",
+    "level": 81
+   },
+   {
+    "chapter": 4201,
+    "who": "林昭",
+    "event": "神人初期",
+    "level": 82
+   },
+   {
+    "chapter": 4201,
+    "who": "沈鹤年",
+    "event": "入神界",
+    "level": 89
+   },
+   {
+    "chapter": 4201,
+    "who": "天枢",
+    "event": "比林昭高 7 阶",
+    "level": 89
+   },
+   {
+    "chapter": 4211,
+    "who": "林昭",
+    "event": "神人中期",
+    "level": 83
+   },
+   {
+    "chapter": 4223,
+    "who": "林昭",
+    "event": "神人后期",
+    "level": 84
+   },
+   {
+    "chapter": 4236,
+    "who": "林昭",
+    "event": "神使初期",
+    "level": 85
+   },
+   {
+    "chapter": 4251,
+    "who": "林昭",
+    "event": "神使中期",
+    "level": 86
+   },
+   {
+    "chapter": 4267,
+    "who": "林昭",
+    "event": "神使后期",
+    "level": 87
+   },
+   {
+    "chapter": 4285,
+    "who": "林昭",
+    "event": "神将初期",
+    "level": 88
+   },
+   {
+    "chapter": 4304,
+    "who": "林昭",
+    "event": "神将中期",
+    "level": 89
+   },
+   {
+    "chapter": 4325,
+    "who": "林昭",
+    "event": "神将后期",
+    "level": 90
+   },
+   {
+    "chapter": 4347,
+    "who": "林昭",
+    "event": "神君初期",
+    "level": 91
+   },
+   {
+    "chapter": 4371,
+    "who": "林昭",
+    "event": "神君中期",
+    "level": 92
+   },
+   {
+    "chapter": 4396,
+    "who": "林昭",
+    "event": "神君后期",
+    "level": 93
+   },
+   {
+    "chapter": 4423,
+    "who": "林昭",
+    "event": "神王初期",
+    "level": 94
+   },
+   {
+    "chapter": 4451,
+    "who": "林昭",
+    "event": "神王中期",
+    "level": 95
+   },
+   {
+    "chapter": 4481,
+    "who": "林昭",
+    "event": "神王后期",
+    "level": 96
+   },
+   {
+    "chapter": 4512,
+    "who": "林昭",
+    "event": "神皇初期",
+    "level": 97
+   },
+   {
+    "chapter": 4545,
+    "who": "林昭",
+    "event": "神皇中期",
+    "level": 98
+   },
+   {
+    "chapter": 4579,
+    "who": "林昭",
+    "event": "神皇后期",
+    "level": 99
+   },
+   {
+    "chapter": 4600,
+    "who": "沈鹤年",
+    "event": "叛神，与林昭决裂",
+    "level": 99
+   },
+   {
+    "chapter": 4615,
+    "who": "林昭",
+    "event": "神帝初期",
+    "level": 100
+   },
+   {
+    "chapter": 4652,
+    "who": "林昭",
+    "event": "神帝中期",
+    "level": 101
+   },
+   {
+    "chapter": 4691,
+    "who": "林昭",
+    "event": "神帝后期",
+    "level": 102
+   },
+   {
+    "chapter": 4731,
+    "who": "林昭",
+    "event": "神尊初期",
+    "level": 103
+   },
+   {
+    "chapter": 4773,
+    "who": "林昭",
+    "event": "神尊中期",
+    "level": 104
+   },
+   {
+    "chapter": 4800,
+    "who": "陆无咎",
+    "event": "最终对决",
+    "level": 105
+   },
+   {
+    "chapter": 4816,
+    "who": "林昭",
+    "event": "神尊后期",
+    "level": 105
+   },
+   {
+    "chapter": 4861,
+    "who": "林昭",
+    "event": "神主初期",
+    "level": 106
+   },
+   {
+    "chapter": 4907,
+    "who": "林昭",
+    "event": "神主中期",
+    "level": 107
+   },
+   {
+    "chapter": 4953,
+    "who": "林昭",
+    "event": "神主后期",
+    "level": 108
+   },
+   {
+    "chapter": 5000,
+    "who": "天枢",
+    "event": "最终对决",
+    "level": 108
+   }
+  ],
+  "stats": {
+   "volumes": 100,
+   "arcs": 500,
+   "chapters": 5000
+  }
+ },
+ "probes": [
+  {
+   "cast_now": [
+    {
+     "id": "c2",
+     "name": "沈鹤年",
+     "role": "师父",
+     "level": "合体后期",
+     "level_index": 21,
+     "voice": {
+      "语气": "慢，爱用反问，从不下判断句",
+      "句长": "长",
+      "口头禅": [
+       "你说呢",
+       "未必",
+       "急什么"
+      ],
+      "禁用词": [
+       "综上所述",
+       "必然",
+       "一定"
+      ],
+      "自称": "老夫（对外）/ 我（对林昭）"
+     }
+    },
+    {
+     "id": "c1",
+     "name": "林昭",
+     "role": "主角",
+     "level": "炼气初期",
+     "level_index": 1,
+     "voice": {
+      "语气": "冷硬，少废话，情绪从不外露",
+      "句长": "短",
+      "口头禅": [
+       "嗯",
+       "走",
+       "不用"
+      ],
+      "禁用词": [
+       "其实",
+       "或许",
+       "我觉得"
+      ],
+      "自称": "我"
+     }
+    },
+    {
+     "id": "c7",
+     "name": "林小满",
+     "role": "亲人",
+     "level": "炼气初期",
+     "level_index": 1,
+     "voice": {
+      "语气": "直白，爱抱怨，说话带青牛镇口音",
+      "句长": "短",
+      "口头禅": [
+       "哥",
+       "你别管",
+       "真的假的"
+      ],
+      "禁用词": [
+       "在下",
+       "本座",
+       "道友"
+      ],
+      "自称": "我"
+     }
+    }
+   ],
+   "chapter_outline": {
+    "no": 1,
+    "title": "碑印辞二",
+    "goal": "在炼气初期境界下，拿到一个答案",
+    "level": "炼气初期",
+    "words": 4000,
+    "ends_with": "崖边的路终究还长，林小满把一把锈刀揣好。",
+    "turn": "关系发生不可逆变化",
+    "beats": [
+     {
+      "text": "沈鹤年在灯下当着所有人的面按住母亲的铜镜，手没抖。",
+      "kind": "冲突"
+     },
+     {
+      "text": "林昭在雪地里没撕开过期的药，手没抖。",
+      "kind": "揭示"
+     },
+     {
+      "text": "烧焦的账本被林小满反倒交出，在雪地里。",
+      "kind": "代价"
+     },
+     {
+      "text": "一把锈刀被林昭又留住，在渡口。",
+      "kind": "转折"
+     }
+    ]
+   },
+   "volume": {
+    "no": 1,
+    "name": "第1卷 · 人界·痕镜",
+    "goal": "活下去。父亲欠债，妹妹病重，镇上有修士收保护费。｜本卷推进到 炼气初期，但代价是暴露一个秘密",
+    "escalates": "从「没有力量」到「有力量但保护不了想保护的人」｜第1卷把这一层的代价推到极限",
+    "start": 1,
+    "end": 50
+   },
+   "arc": {
+    "no": 1,
+    "name": "起·局",
+    "goal": "起段：在炼气初期境界下，把「活下去。父亲欠债，妹妹病重，」推进一层",
+    "escalates": "建立规则",
+    "start": 1,
+    "end": 10
+   },
+   "act": {
+    "no": 1,
+    "name": "第一幕 · 铁匠之子",
+    "conflict": "活下去。父亲欠债，妹妹病重，镇上有修士收保护费。",
+    "irreversible": "林昭踏入修行，再也回不去做凡人。妹妹的时间开始倒数。",
+    "escalates": "从「没有力量」到「有力量但保护不了想保护的人」"
+   },
+   "chapter": 1,
+   "realm": "人界",
+   "level": "炼气初期",
+   "level_span": "1~21",
+   "power": 1.0,
+   "rank": 0.0,
+   "state_c1": {
+    "左眉骨": "一道三厘米的旧疤",
+    "境界": "炼气初期",
+    "所在": "青牛镇"
+   },
+   "state_c2": {
+    "右手": "缺了半截小指",
+    "身份": "青牛镇教书先生"
+   },
+   "state_c3": {},
+   "due_foreshadow": [],
+   "overdue": [],
+   "inject_chars": 1847,
+   "inject_block": "【作品】《》｜\n【一句话】\n【进度】第 1 / 5000 章（第 1/100 卷 · 第 1 弧）\n\n【力量体系 · 第 1 章】\n当前界：人界（炼精化气。修士以肉身承载灵气，寿元不过三百。）\n当前境界：炼气初期（第 1~21 章）\n下一阶：炼气中期（第 22 章起）\n本界境界序列：炼气 → 筑基 → 金丹 → 元婴 → 化神 → 炼虚 → 合体 → 大乘 → 渡劫\n硬规则：境界共四界三十六境，每境三阶（初期/中期/后期），共一百零八阶。；境界不可跳级。可以借外力短时爆发，但事后必然反噬。；跨界飞升会受界壁压制，境界暂时跌落至新界底层，需重新攀升。；死者不可复生。任何复活情节都是设定错误。\n\n【世界状态 · 第 1 章】\n故事内时间：人界·青牛镇 · 春\n\n▸ 林昭\n  · 左眉骨：一道三厘米的旧疤\n  · 境界：炼气初期\n  · 所在：青牛镇\n  · 数值：战力 10\n  · 声音：语气=冷硬，少废话；口头禅=嗯/走；绝不说=其实/或许\n\n▸ 沈鹤年\n  · 右手：缺了半截小指\n  · 身份：青牛镇教书先生\n  · 数值：战力 10\n  · 声音：语气=慢，爱用反问；口头禅=你说呢；绝不说=综上所述\n  · 数值：战力 10\n  · 声音：语气=短促，带刺；口头禅=废话；绝不说=抱歉\n\n【世界硬规则】\n  · 境界共四界三十六境，每境三阶（初期/中期/后期），共一百零八阶。\n  · 境界不可跳级。可以借外力短时爆发，但事后必然反噬。\n  · 跨界飞升会受界壁压制，境界暂时跌落至新界底层，需重新攀升。\n  · 死者不可复生。任何复活情节都是设定错误。\n  · 神格唯一。同一神格不能同时存在两个持有者。\n\n【本卷目标】第1卷：卷目标1\n\n【本弧目标】第1卷第1弧：弧目标1-1\n\n【本章】第1章\n  · 事件一\n  · 事件二\n  · 事件三\n  · 本章必须停在这里：他关上了门。\n\n【上一章最后一段（原文，必须无缝接上）】\n他关上了门。门外有人在等。\n\n\n【写作契约·硬约束，违反任何一条都算失败】\n\n一、句子\n- 平均句长 12~18 字。每 200 字内至少出现 2 个 8 字以内的短句。\n- 禁止连续 3 个长句。长句之后必须跟短句。\n- 句长必须有明显起伏：最短 2 字，最长可到 50 字。\n\n二、描写\n- 只写\"摄像机拍得到、录音机录得到\"的东西：动作、器物、声音、气味、温度、光影。\n- 不写\"他感到\"\"他心想\"\"他意识到\"。\n- 抽象名词（命运、意义、救赎、灵魂、价值、本质）全篇出现不超过 3 次。\n\n三、对话\n- 对话必须口语化，允许打断、答非所问、说半句、沉默。\n- 禁止解释性台词（\"你知道的，自从那件事以后……\"这种交代信息的句子）。\n- 每个主要人物有独立的说话方式：句子长短、口头禅、避讳的词，都不同。\n\n四、结构\n- 每段结尾停在具体动作或物件上，不做总结。\n- 场景转换用硬切，不用\"与此同时\"之类的过渡。\n- 不解释因果。把因果留给读者。\n\n五、禁用词（出现任何一个即判定失败）\n仿佛、似乎、不禁、不由得、缓缓、微微、轻轻、悄然、默默、一丝、一抹、一缕、 几分、些许、隐约、恍惚、如同、宛如、犹如、恰似、瞳孔骤缩、瞳孔微缩、 嘴角勾起、嘴角微微上扬、眼底闪过、眼中闪过、不易察觉、若有所思、意味深长、 深吸一口气、缓缓开口、沉默片刻、良久、叹了口气、苦笑一声、眼神复杂、 神色复杂、心中涌起、心头一震、心中一惊、五味杂陈、百感交集、如遭雷击、 难以言喻、无法言说、不知为何、与此同时、然而、尽管如此、总而言之、 换句话说、值得一提的是、命运的齿轮、冥冥之中、这一刻、就在这一刻、 终于明白、恍然大悟、一切都不一样了、无尽的、深深的、淡淡的、莫名的、 前所未有的、难以形容的、无法抗拒的、令人窒息的、如同时间静止、 仿佛时间静止、仿佛整个世界、如同一道闪电、如同一记重锤\n\n六、禁用结构\n1. 禁止段末总结/升华。段落的最后一句必须是具体动作、具体物件、或一句对话。\n2. 禁止\"不仅…而且\"\"既…又\"\"不是…而是\"这类对仗句式。\n3. 禁止三句以上连续排比。\n4. 禁止用\"他感到/他觉得/他心中\"引出情绪，改用身体反应或动作失误。\n5. 禁止解释人物为什么这么做。读者要自己看出来。\n6. 禁止让配角说出主题句。主题只能由情节呈现。\n7. 禁止\"总结全文\"式结尾。\n8. 禁止每段长度相近。段落必须有长有短，最短可以只有一行。\n"
+  },
+  {
+   "cast_now": [
+    {
+     "id": "c2",
+     "name": "沈鹤年",
+     "role": "师父",
+     "level": "合体后期",
+     "level_index": 21,
+     "voice": {
+      "语气": "慢，爱用反问，从不下判断句",
+      "句长": "长",
+      "口头禅": [
+       "你说呢",
+       "未必",
+       "急什么"
+      ],
+      "禁用词": [
+       "综上所述",
+       "必然",
+       "一定"
+      ],
+      "自称": "老夫（对外）/ 我（对林昭）"
+     }
+    },
+    {
+     "id": "c1",
+     "name": "林昭",
+     "role": "主角",
+     "level": "炼气初期",
+     "level_index": 1,
+     "voice": {
+      "语气": "冷硬，少废话，情绪从不外露",
+      "句长": "短",
+      "口头禅": [
+       "嗯",
+       "走",
+       "不用"
+      ],
+      "禁用词": [
+       "其实",
+       "或许",
+       "我觉得"
+      ],
+      "自称": "我"
+     }
+    },
+    {
+     "id": "c7",
+     "name": "林小满",
+     "role": "亲人",
+     "level": "炼气初期",
+     "level_index": 1,
+     "voice": {
+      "语气": "直白，爱抱怨，说话带青牛镇口音",
+      "句长": "短",
+      "口头禅": [
+       "哥",
+       "你别管",
+       "真的假的"
+      ],
+      "禁用词": [
+       "在下",
+       "本座",
+       "道友"
+      ],
+      "自称": "我"
+     }
+    }
+   ],
+   "chapter_outline": {
+    "no": 21,
+    "title": "灰印书六",
+    "goal": "在炼气初期境界下，拿到一个答案",
+    "level": "炼气初期",
+    "words": 4000,
+    "ends_with": "林小满终究转身走了，带血的布留在雪地里。",
+    "turn": "认知发生不可逆变化",
+    "beats": [
+     {
+      "text": "林小满把过期的药一声不响地摔碎，站在崖边。",
+      "kind": "冲突"
+     },
+     {
+      "text": "林小满终究把一把锈刀认出，在崖边，谁都没拦。",
+      "kind": "揭示"
+     },
+     {
+      "text": "林昭把一把锈刀再割下，站在渡口。",
+      "kind": "代价"
+     },
+     {
+      "text": "沈鹤年先把烧焦的账本钉死，在旧屋，谁都没拦。",
+      "kind": "转折"
+     }
+    ]
+   },
+   "volume": {
+    "no": 1,
+    "name": "第1卷 · 人界·痕镜",
+    "goal": "活下去。父亲欠债，妹妹病重，镇上有修士收保护费。｜本卷推进到 炼气初期，但代价是暴露一个秘密",
+    "escalates": "从「没有力量」到「有力量但保护不了想保护的人」｜第1卷把这一层的代价推到极限",
+    "start": 1,
+    "end": 50
+   },
+   "arc": {
+    "no": 3,
+    "name": "转·折",
+    "goal": "转段：在炼气初期境界下，把「活下去。父亲欠债，妹妹病重，」推进一层",
+    "escalates": "代价显现",
+    "start": 21,
+    "end": 30
+   },
+   "act": {
+    "no": 1,
+    "name": "第一幕 · 铁匠之子",
+    "conflict": "活下去。父亲欠债，妹妹病重，镇上有修士收保护费。",
+    "irreversible": "林昭踏入修行，再也回不去做凡人。妹妹的时间开始倒数。",
+    "escalates": "从「没有力量」到「有力量但保护不了想保护的人」"
+   },
+   "chapter": 21,
+   "realm": "人界",
+   "level": "炼气初期",
+   "level_span": "1~21",
+   "power": 1.0,
+   "rank": 0.0,
+   "state_c1": {
+    "左眉骨": "一道三厘米的旧疤",
+    "境界": "炼气初期",
+    "所在": "青牛镇"
+   },
+   "state_c2": {
+    "右手": "缺了半截小指",
+    "身份": "青牛镇教书先生"
+   },
+   "state_c3": {},
+   "due_foreshadow": [],
+   "overdue": [],
+   "inject_chars": 1797,
+   "inject_block": "【作品】《》｜\n【一句话】\n【进度】第 21 / 5000 章（第 1/100 卷 · 第 3 弧）\n\n【力量体系 · 第 21 章】\n当前界：人界（炼精化气。修士以肉身承载灵气，寿元不过三百。）\n当前境界：炼气初期（第 1~21 章）\n下一阶：炼气中期（第 22 章起）\n本界境界序列：炼气 → 筑基 → 金丹 → 元婴 → 化神 → 炼虚 → 合体 → 大乘 → 渡劫\n硬规则：境界共四界三十六境，每境三阶（初期/中期/后期），共一百零八阶。；境界不可跳级。可以借外力短时爆发，但事后必然反噬。；跨界飞升会受界壁压制，境界暂时跌落至新界底层，需重新攀升。；死者不可复生。任何复活情节都是设定错误。\n\n【世界状态 · 第 21 章】\n故事内时间：人界·青牛镇 · 春\n\n▸ 林昭\n  · 左眉骨：一道三厘米的旧疤\n  · 境界：炼气初期\n  · 所在：青牛镇\n  · 数值：战力 17\n  · 声音：语气=冷硬，少废话；口头禅=嗯/走；绝不说=其实/或许\n\n▸ 沈鹤年\n  · 右手：缺了半截小指\n  · 身份：青牛镇教书先生\n  · 数值：战力 17\n  · 声音：语气=慢，爱用反问；口头禅=你说呢；绝不说=综上所述\n  · 数值：战力 17\n  · 声音：语气=短促，带刺；口头禅=废话；绝不说=抱歉\n\n【世界硬规则】\n  · 境界共四界三十六境，每境三阶（初期/中期/后期），共一百零八阶。\n  · 境界不可跳级。可以借外力短时爆发，但事后必然反噬。\n  · 跨界飞升会受界壁压制，境界暂时跌落至新界底层，需重新攀升。\n  · 死者不可复生。任何复活情节都是设定错误。\n  · 神格唯一。同一神格不能同时存在两个持有者。\n\n【本卷目标】第1卷：卷目标1\n\n【本弧目标】第1卷第3弧：弧目标1-3\n\n【上一章最后一段（原文，必须无缝接上）】\n他关上了门。门外有人在等。\n\n\n【写作契约·硬约束，违反任何一条都算失败】\n\n一、句子\n- 平均句长 12~18 字。每 200 字内至少出现 2 个 8 字以内的短句。\n- 禁止连续 3 个长句。长句之后必须跟短句。\n- 句长必须有明显起伏：最短 2 字，最长可到 50 字。\n\n二、描写\n- 只写\"摄像机拍得到、录音机录得到\"的东西：动作、器物、声音、气味、温度、光影。\n- 不写\"他感到\"\"他心想\"\"他意识到\"。\n- 抽象名词（命运、意义、救赎、灵魂、价值、本质）全篇出现不超过 3 次。\n\n三、对话\n- 对话必须口语化，允许打断、答非所问、说半句、沉默。\n- 禁止解释性台词（\"你知道的，自从那件事以后……\"这种交代信息的句子）。\n- 每个主要人物有独立的说话方式：句子长短、口头禅、避讳的词，都不同。\n\n四、结构\n- 每段结尾停在具体动作或物件上，不做总结。\n- 场景转换用硬切，不用\"与此同时\"之类的过渡。\n- 不解释因果。把因果留给读者。\n\n五、禁用词（出现任何一个即判定失败）\n仿佛、似乎、不禁、不由得、缓缓、微微、轻轻、悄然、默默、一丝、一抹、一缕、 几分、些许、隐约、恍惚、如同、宛如、犹如、恰似、瞳孔骤缩、瞳孔微缩、 嘴角勾起、嘴角微微上扬、眼底闪过、眼中闪过、不易察觉、若有所思、意味深长、 深吸一口气、缓缓开口、沉默片刻、良久、叹了口气、苦笑一声、眼神复杂、 神色复杂、心中涌起、心头一震、心中一惊、五味杂陈、百感交集、如遭雷击、 难以言喻、无法言说、不知为何、与此同时、然而、尽管如此、总而言之、 换句话说、值得一提的是、命运的齿轮、冥冥之中、这一刻、就在这一刻、 终于明白、恍然大悟、一切都不一样了、无尽的、深深的、淡淡的、莫名的、 前所未有的、难以形容的、无法抗拒的、令人窒息的、如同时间静止、 仿佛时间静止、仿佛整个世界、如同一道闪电、如同一记重锤\n\n六、禁用结构\n1. 禁止段末总结/升华。段落的最后一句必须是具体动作、具体物件、或一句对话。\n2. 禁止\"不仅…而且\"\"既…又\"\"不是…而是\"这类对仗句式。\n3. 禁止三句以上连续排比。\n4. 禁止用\"他感到/他觉得/他心中\"引出情绪，改用身体反应或动作失误。\n5. 禁止解释人物为什么这么做。读者要自己看出来。\n6. 禁止让配角说出主题句。主题只能由情节呈现。\n7. 禁止\"总结全文\"式结尾。\n8. 禁止每段长度相近。段落必须有长有短，最短可以只有一行。\n"
+  },
+  {
+   "cast_now": [
+    {
+     "id": "c2",
+     "name": "沈鹤年",
+     "role": "师父",
+     "level": "合体后期",
+     "level_index": 21,
+     "voice": {
+      "语气": "慢，爱用反问，从不下判断句",
+      "句长": "长",
+      "口头禅": [
+       "你说呢",
+       "未必",
+       "急什么"
+      ],
+      "禁用词": [
+       "综上所述",
+       "必然",
+       "一定"
+      ],
+      "自称": "老夫（对外）/ 我（对林昭）"
+     }
+    },
+    {
+     "id": "c1",
+     "name": "林昭",
+     "role": "主角",
+     "level": "筑基初期",
+     "level_index": 4,
+     "voice": {
+      "语气": "冷硬，少废话，情绪从不外露",
+      "句长": "短",
+      "口头禅": [
+       "嗯",
+       "走",
+       "不用"
+      ],
+      "禁用词": [
+       "其实",
+       "或许",
+       "我觉得"
+      ],
+      "自称": "我"
+     }
+    },
+    {
+     "id": "c7",
+     "name": "林小满",
+     "role": "亲人",
+     "level": "炼气初期",
+     "level_index": 1,
+     "voice": {
+      "语气": "直白，爱抱怨，说话带青牛镇口音",
+      "句长": "短",
+      "口头禅": [
+       "哥",
+       "你别管",
+       "真的假的"
+      ],
+      "禁用词": [
+       "在下",
+       "本座",
+       "道友"
+      ],
+      "自称": "我"
+     }
+    }
+   ],
+   "chapter_outline": {
+    "no": 100,
+    "title": "隙锤铭上",
+    "goal": "在筑基初期境界下，拿到一个答案",
+    "level": "筑基初期",
+    "words": 4000,
+    "ends_with": "带血的布上沾了血，当着所有人的面没人擦，林小满站在祠堂。",
+    "turn": "认知发生不可逆变化",
+    "beats": [
+     {
+      "text": "沈鹤年再摔碎断了的指骨的时候，渡口只有风。",
+      "kind": "冲突"
+     },
+     {
+      "text": "在祠堂，林昭把一截麻绳还是撕开，转身就走。",
+      "kind": "揭示"
+     },
+     {
+      "text": "林小满还是押上一把锈刀的时候，旧屋只有风。",
+      "kind": "代价"
+     },
+     {
+      "text": "林昭再放下烧焦的账本的时候，祠堂只有风。",
+      "kind": "转折"
+     }
+    ]
+   },
+   "volume": {
+    "no": 2,
+    "name": "第2卷 · 人界·债薪",
+    "goal": "活下去。父亲欠债，妹妹病重，镇上有修士收保护费。｜本卷推进到 炼气后期，但代价是欠下一笔债",
+    "escalates": "从「没有力量」到「有力量但保护不了想保护的人」｜第2卷把这一层的代价推到极限",
+    "start": 51,
+    "end": 100
+   },
+   "arc": {
+    "no": 10,
+    "name": "余·波",
+    "goal": "合段：在筑基初期境界下，把「活下去。父亲欠债，妹妹病重，」推进一层",
+    "escalates": "余震",
+    "start": 91,
+    "end": 100
+   },
+   "act": {
+    "no": 1,
+    "name": "第一幕 · 铁匠之子",
+    "conflict": "活下去。父亲欠债，妹妹病重，镇上有修士收保护费。",
+    "irreversible": "林昭踏入修行，再也回不去做凡人。妹妹的时间开始倒数。",
+    "escalates": "从「没有力量」到「有力量但保护不了想保护的人」"
+   },
+   "chapter": 100,
+   "realm": "人界",
+   "level": "筑基初期",
+   "level_span": "72~100",
+   "power": 4.9,
+   "rank": 0.1154,
+   "state_c1": {
+    "左眉骨": "一道三厘米的旧疤",
+    "境界": "筑基初期",
+    "所在": "青牛镇"
+   },
+   "state_c2": {
+    "右手": "缺了半截小指",
+    "身份": "青牛镇教书先生"
+   },
+   "state_c3": {},
+   "due_foreshadow": [],
+   "overdue": [],
+   "inject_chars": 1803,
+   "inject_block": "【作品】《》｜\n【一句话】\n【进度】第 100 / 5000 章（第 2/100 卷 · 第 5 弧）\n\n【力量体系 · 第 100 章】\n当前界：人界（炼精化气。修士以肉身承载灵气，寿元不过三百。）\n当前境界：筑基初期（第 72~100 章）\n下一阶：筑基中期（第 101 章起）\n本界境界序列：炼气 → 筑基 → 金丹 → 元婴 → 化神 → 炼虚 → 合体 → 大乘 → 渡劫\n硬规则：境界共四界三十六境，每境三阶（初期/中期/后期），共一百零八阶。；境界不可跳级。可以借外力短时爆发，但事后必然反噬。；跨界飞升会受界壁压制，境界暂时跌落至新界底层，需重新攀升。；死者不可复生。任何复活情节都是设定错误。\n\n【世界状态 · 第 100 章】\n故事内时间：人界·青牛镇 · 春\n\n▸ 林昭\n  · 左眉骨：一道三厘米的旧疤\n  · 境界：筑基初期\n  · 所在：青牛镇\n  · 数值：战力 45\n  · 声音：语气=冷硬，少废话；口头禅=嗯/走；绝不说=其实/或许\n\n▸ 沈鹤年\n  · 右手：缺了半截小指\n  · 身份：青牛镇教书先生\n  · 数值：战力 45\n  · 声音：语气=慢，爱用反问；口头禅=你说呢；绝不说=综上所述\n  · 数值：战力 45\n  · 声音：语气=短促，带刺；口头禅=废话；绝不说=抱歉\n\n【世界硬规则】\n  · 境界共四界三十六境，每境三阶（初期/中期/后期），共一百零八阶。\n  · 境界不可跳级。可以借外力短时爆发，但事后必然反噬。\n  · 跨界飞升会受界壁压制，境界暂时跌落至新界底层，需重新攀升。\n  · 死者不可复生。任何复活情节都是设定错误。\n  · 神格唯一。同一神格不能同时存在两个持有者。\n\n【本卷目标】第2卷：卷目标2\n\n【本弧目标】第2卷第5弧：弧目标2-5\n\n【上一章最后一段（原文，必须无缝接上）】\n他关上了门。门外有人在等。\n\n\n【写作契约·硬约束，违反任何一条都算失败】\n\n一、句子\n- 平均句长 12~18 字。每 200 字内至少出现 2 个 8 字以内的短句。\n- 禁止连续 3 个长句。长句之后必须跟短句。\n- 句长必须有明显起伏：最短 2 字，最长可到 50 字。\n\n二、描写\n- 只写\"摄像机拍得到、录音机录得到\"的东西：动作、器物、声音、气味、温度、光影。\n- 不写\"他感到\"\"他心想\"\"他意识到\"。\n- 抽象名词（命运、意义、救赎、灵魂、价值、本质）全篇出现不超过 3 次。\n\n三、对话\n- 对话必须口语化，允许打断、答非所问、说半句、沉默。\n- 禁止解释性台词（\"你知道的，自从那件事以后……\"这种交代信息的句子）。\n- 每个主要人物有独立的说话方式：句子长短、口头禅、避讳的词，都不同。\n\n四、结构\n- 每段结尾停在具体动作或物件上，不做总结。\n- 场景转换用硬切，不用\"与此同时\"之类的过渡。\n- 不解释因果。把因果留给读者。\n\n五、禁用词（出现任何一个即判定失败）\n仿佛、似乎、不禁、不由得、缓缓、微微、轻轻、悄然、默默、一丝、一抹、一缕、 几分、些许、隐约、恍惚、如同、宛如、犹如、恰似、瞳孔骤缩、瞳孔微缩、 嘴角勾起、嘴角微微上扬、眼底闪过、眼中闪过、不易察觉、若有所思、意味深长、 深吸一口气、缓缓开口、沉默片刻、良久、叹了口气、苦笑一声、眼神复杂、 神色复杂、心中涌起、心头一震、心中一惊、五味杂陈、百感交集、如遭雷击、 难以言喻、无法言说、不知为何、与此同时、然而、尽管如此、总而言之、 换句话说、值得一提的是、命运的齿轮、冥冥之中、这一刻、就在这一刻、 终于明白、恍然大悟、一切都不一样了、无尽的、深深的、淡淡的、莫名的、 前所未有的、难以形容的、无法抗拒的、令人窒息的、如同时间静止、 仿佛时间静止、仿佛整个世界、如同一道闪电、如同一记重锤\n\n六、禁用结构\n1. 禁止段末总结/升华。段落的最后一句必须是具体动作、具体物件、或一句对话。\n2. 禁止\"不仅…而且\"\"既…又\"\"不是…而是\"这类对仗句式。\n3. 禁止三句以上连续排比。\n4. 禁止用\"他感到/他觉得/他心中\"引出情绪，改用身体反应或动作失误。\n5. 禁止解释人物为什么这么做。读者要自己看出来。\n6. 禁止让配角说出主题句。主题只能由情节呈现。\n7. 禁止\"总结全文\"式结尾。\n8. 禁止每段长度相近。段落必须有长有短，最短可以只有一行。\n"
+  },
+  {
+   "cast_now": [
+    {
+     "id": "c2",
+     "name": "沈鹤年",
+     "role": "师父",
+     "level": "合体后期",
+     "level_index": 21,
+     "voice": {
+      "语气": "慢，爱用反问，从不下判断句",
+      "句长": "长",
+      "口头禅": [
+       "你说呢",
+       "未必",
+       "急什么"
+      ],
+      "禁用词": [
+       "综上所述",
+       "必然",
+       "一定"
+      ],
+      "自称": "老夫（对外）/ 我（对林昭）"
+     }
+    },
+    {
+     "id": "c1",
+     "name": "林昭",
+     "role": "主角",
+     "level": "化神中期",
+     "level_index": 14,
+     "voice": {
+      "语气": "冷硬，少废话，情绪从不外露",
+      "句长": "短",
+      "口头禅": [
+       "嗯",
+       "走",
+       "不用"
+      ],
+      "禁用词": [
+       "其实",
+       "或许",
+       "我觉得"
+      ],
+      "自称": "我"
+     }
+    },
+    {
+     "id": "c3",
+     "name": "苏见月",
+     "role": "道侣",
+     "level": "元婴后期",
+     "level_index": 12,
+     "voice": {
+      "语气": "短促，带刺，越亲近越刻薄",
+      "句长": "短",
+      "口头禅": [
+       "废话",
+       "闭嘴",
+       "烦"
+      ],
+      "禁用词": [
+       "抱歉",
+       "对不起",
+       "谢谢"
+      ],
+      "自称": "我"
+     }
+    },
+    {
+     "id": "c7",
+     "name": "林小满",
+     "role": "亲人",
+     "level": "炼气初期",
+     "level_index": 1,
+     "voice": {
+      "语气": "直白，爱抱怨，说话带青牛镇口音",
+      "句长": "短",
+      "口头禅": [
+       "哥",
+       "你别管",
+       "真的假的"
+      ],
+      "禁用词": [
+       "在下",
+       "本座",
+       "道友"
+      ],
+      "自称": "我"
+     }
+    }
+   ],
+   "chapter_outline": {
+    "no": 500,
+    "title": "烬锤册四",
+    "goal": "在化神中期境界下，拿到一个承诺",
+    "level": "化神中期",
+    "words": 4000,
+    "ends_with": "半张契上沾了血，没没人擦，林昭站在灯下。",
+    "turn": "立场发生不可逆变化",
+    "beats": [
+     {
+      "text": "苏见月把一枚旧印才夺走，站在灯下。",
+      "kind": "冲突"
+     },
+     {
+      "text": "断了的指骨被沈鹤年没认出，在旧屋。",
+      "kind": "揭示"
+     },
+     {
+      "text": "一截麻绳在祠堂再被苏见月交出，一声没吭。",
+      "kind": "代价"
+     },
+     {
+      "text": "在祠堂，苏见月再钉死一块碎瓦。",
+      "kind": "转折"
+     }
+    ]
+   },
+   "volume": {
+    "no": 10,
+    "name": "第10卷 · 人界·锈锤",
+    "goal": "打得过所有人，却打不过时间。妹妹老死，师父失踪。｜本卷推进到 化神初期，但代价是多一个敌人",
+    "escalates": "从「打不过」到「打不得」——敌人是他不能杀的人｜第10卷把这一层的代价推到极限",
+    "start": 451,
+    "end": 500
+   },
+   "arc": {
+    "no": 50,
+    "name": "余·波",
+    "goal": "合段：在化神初期境界下，把「打得过所有人，却打不过时间。」推进一层",
+    "escalates": "余震",
+    "start": 491,
+    "end": 500
+   },
+   "act": {
+    "no": 2,
+    "name": "第二幕 · 人界之巅",
+    "conflict": "打得过所有人，却打不过时间。妹妹老死，师父失踪。",
+    "irreversible": "林昭亲手送走妹妹，人界再无可恋，只剩飞升一条路。",
+    "escalates": "从「打不过」到「打不得」——敌人是他不能杀的人"
+   },
+   "chapter": 500,
+   "realm": "人界",
+   "level": "化神中期",
+   "level_span": "497~555",
+   "power": 1000.0,
+   "rank": 0.5,
+   "state_c1": {
+    "左眉骨": "一道三厘米的旧疤"
+   },
+   "state_c2": {
+    "右手": "缺了半截小指",
+    "身份": "青牛镇教书先生"
+   },
+   "state_c3": {
+    "左耳": "耳垂上有个豁口",
+    "关系": "同门师姐"
+   },
+   "due_foreshadow": [],
+   "overdue": [],
+   "inject_chars": 1856,
+   "inject_block": "【作品】《》｜\n【一句话】\n【进度】第 500 / 5000 章（第 10/100 卷 · 第 5 弧）\n\n【力量体系 · 第 500 章】\n当前界：人界（炼精化气。修士以肉身承载灵气，寿元不过三百。）\n当前境界：化神中期（第 497~555 章）\n下一阶：化神后期（第 556 章起）\n本界境界序列：炼气 → 筑基 → 金丹 → 元婴 → 化神 → 炼虚 → 合体 → 大乘 → 渡劫\n硬规则：境界共四界三十六境，每境三阶（初期/中期/后期），共一百零八阶。；境界不可跳级。可以借外力短时爆发，但事后必然反噬。；跨界飞升会受界壁压制，境界暂时跌落至新界底层，需重新攀升。；死者不可复生。任何复活情节都是设定错误。\n\n【世界状态 · 第 500 章】\n故事内时间：人界·化神 · 三年后\n\n▸ 林昭\n  · 左眉骨：一道三厘米的旧疤\n  · 数值：战力 307\n  · 声音：语气=冷硬，少废话；口头禅=嗯/走；绝不说=其实/或许\n\n▸ 沈鹤年\n  · 右手：缺了半截小指\n  · 身份：青牛镇教书先生\n  · 数值：战力 307\n  · 声音：语气=慢，爱用反问；口头禅=你说呢；绝不说=综上所述\n\n▸ 苏见月\n  · 左耳：耳垂上有个豁口\n  · 关系：同门师姐\n  · 数值：战力 307\n  · 声音：语气=短促，带刺；口头禅=废话；绝不说=抱歉\n\n【世界硬规则】\n  · 境界共四界三十六境，每境三阶（初期/中期/后期），共一百零八阶。\n  · 境界不可跳级。可以借外力短时爆发，但事后必然反噬。\n  · 跨界飞升会受界壁压制，境界暂时跌落至新界底层，需重新攀升。\n  · 死者不可复生。任何复活情节都是设定错误。\n  · 神格唯一。同一神格不能同时存在两个持有者。\n\n【本卷目标】第10卷：卷目标10\n\n【本章】第500章\n  · 事件一\n  · 事件二\n  · 事件三\n  · 本章必须停在这里：他关上了门。\n\n【上一章最后一段（原文，必须无缝接上）】\n他关上了门。门外有人在等。\n\n\n【写作契约·硬约束，违反任何一条都算失败】\n\n一、句子\n- 平均句长 12~18 字。每 200 字内至少出现 2 个 8 字以内的短句。\n- 禁止连续 3 个长句。长句之后必须跟短句。\n- 句长必须有明显起伏：最短 2 字，最长可到 50 字。\n\n二、描写\n- 只写\"摄像机拍得到、录音机录得到\"的东西：动作、器物、声音、气味、温度、光影。\n- 不写\"他感到\"\"他心想\"\"他意识到\"。\n- 抽象名词（命运、意义、救赎、灵魂、价值、本质）全篇出现不超过 3 次。\n\n三、对话\n- 对话必须口语化，允许打断、答非所问、说半句、沉默。\n- 禁止解释性台词（\"你知道的，自从那件事以后……\"这种交代信息的句子）。\n- 每个主要人物有独立的说话方式：句子长短、口头禅、避讳的词，都不同。\n\n四、结构\n- 每段结尾停在具体动作或物件上，不做总结。\n- 场景转换用硬切，不用\"与此同时\"之类的过渡。\n- 不解释因果。把因果留给读者。\n\n五、禁用词（出现任何一个即判定失败）\n仿佛、似乎、不禁、不由得、缓缓、微微、轻轻、悄然、默默、一丝、一抹、一缕、 几分、些许、隐约、恍惚、如同、宛如、犹如、恰似、瞳孔骤缩、瞳孔微缩、 嘴角勾起、嘴角微微上扬、眼底闪过、眼中闪过、不易察觉、若有所思、意味深长、 深吸一口气、缓缓开口、沉默片刻、良久、叹了口气、苦笑一声、眼神复杂、 神色复杂、心中涌起、心头一震、心中一惊、五味杂陈、百感交集、如遭雷击、 难以言喻、无法言说、不知为何、与此同时、然而、尽管如此、总而言之、 换句话说、值得一提的是、命运的齿轮、冥冥之中、这一刻、就在这一刻、 终于明白、恍然大悟、一切都不一样了、无尽的、深深的、淡淡的、莫名的、 前所未有的、难以形容的、无法抗拒的、令人窒息的、如同时间静止、 仿佛时间静止、仿佛整个世界、如同一道闪电、如同一记重锤\n\n六、禁用结构\n1. 禁止段末总结/升华。段落的最后一句必须是具体动作、具体物件、或一句对话。\n2. 禁止\"不仅…而且\"\"既…又\"\"不是…而是\"这类对仗句式。\n3. 禁止三句以上连续排比。\n4. 禁止用\"他感到/他觉得/他心中\"引出情绪，改用身体反应或动作失误。\n5. 禁止解释人物为什么这么做。读者要自己看出来。\n6. 禁止让配角说出主题句。主题只能由情节呈现。\n7. 禁止\"总结全文\"式结尾。\n8. 禁止每段长度相近。段落必须有长有短，最短可以只有一行。\n"
+  },
+  {
+   "cast_now": [
+    {
+     "id": "c2",
+     "name": "沈鹤年",
+     "role": "师父",
+     "level": "渡劫后期",
+     "level_index": 27,
+     "voice": {
+      "语气": "慢，爱用反问，从不下判断句",
+      "句长": "长",
+      "口头禅": [
+       "你说呢",
+       "未必",
+       "急什么"
+      ],
+      "禁用词": [
+       "综上所述",
+       "必然",
+       "一定"
+      ],
+      "自称": "老夫（对外）/ 我（对林昭）"
+     }
+    },
+    {
+     "id": "c1",
+     "name": "林昭",
+     "role": "主角",
+     "level": "渡劫初期",
+     "level_index": 25,
+     "voice": {
+      "语气": "冷硬，少废话，情绪从不外露",
+      "句长": "短",
+      "口头禅": [
+       "嗯",
+       "走",
+       "不用"
+      ],
+      "禁用词": [
+       "其实",
+       "或许",
+       "我觉得"
+      ],
+      "自称": "我"
+     }
+    },
+    {
+     "id": "c3",
+     "name": "苏见月",
+     "role": "道侣",
+     "level": "渡劫初期",
+     "level_index": 25,
+     "voice": {
+      "语气": "短促，带刺，越亲近越刻薄",
+      "句长": "短",
+      "口头禅": [
+       "废话",
+       "闭嘴",
+       "烦"
+      ],
+      "禁用词": [
+       "抱歉",
+       "对不起",
+       "谢谢"
+      ],
+      "自称": "我"
+     }
+    },
+    {
+     "id": "c4",
+     "name": "陆无咎",
+     "role": "宿敌",
+     "level": "大乘后期",
+     "level_index": 24,
+     "voice": {
+      "语气": "拖长音，阴阳怪气，爱用敬语说狠话",
+      "句长": "中",
+      "口头禅": [
+       "有意思",
+       "请吧",
+       "恕不奉陪"
+      ],
+      "禁用词": [
+       "谢谢",
+       "感激"
+      ],
+      "自称": "在下 / 本座"
+     }
+    },
+    {
+     "id": "c7",
+     "name": "林小满",
+     "role": "亲人",
+     "level": "炼气初期",
+     "level_index": 1,
+     "voice": {
+      "语气": "直白，爱抱怨，说话带青牛镇口音",
+      "句长": "短",
+      "口头禅": [
+       "哥",
+       "你别管",
+       "真的假的"
+      ],
+      "禁用词": [
+       "在下",
+       "本座",
+       "道友"
+      ],
+      "自称": "我"
+     }
+    }
+   ],
+   "chapter_outline": {
+    "no": 1405,
+    "title": "潮刀简一",
+    "goal": "在渡劫初期境界下，拿到一个答案",
+    "level": "渡劫初期",
+    "words": 4000,
+    "ends_with": "灯下只剩下断了的指骨，陆无咎一声不响地走了。",
+    "turn": "实力发生不可逆变化",
+    "beats": [
+     {
+      "text": "在渡口，林昭把带血的布又推开，转身就走。",
+      "kind": "冲突"
+     },
+     {
+      "text": "林小满在灯下一声不响地点破写了一半的信，手没抖。",
+      "kind": "揭示"
+     },
+     {
+      "text": "烧焦的账本被林昭反倒砸烂，在雪地里。",
+      "kind": "代价"
+     },
+     {
+      "text": "苏见月还是把一截麻绳折好，在渡口，谁都没拦。",
+      "kind": "转折"
+     }
+    ]
+   },
+   "volume": {
+    "no": 29,
+    "name": "第29卷 · 人界·断河",
+    "goal": "打得过所有人，却打不过时间。妹妹老死，师父失踪。｜本卷推进到 渡劫初期，但代价是少一个亲人",
+    "escalates": "从「打不过」到「打不得」——敌人是他不能杀的人｜第29卷把这一层的代价推到极限",
+    "start": 1401,
+    "end": 1450
+   },
+   "arc": {
+    "no": 141,
+    "name": "起·局",
+    "goal": "起段：在渡劫初期境界下，把「打得过所有人，却打不过时间。」推进一层",
+    "escalates": "建立规则",
+    "start": 1401,
+    "end": 1410
+   },
+   "act": {
+    "no": 2,
+    "name": "第二幕 · 人界之巅",
+    "conflict": "打得过所有人，却打不过时间。妹妹老死，师父失踪。",
+    "irreversible": "林昭亲手送走妹妹，人界再无可恋，只剩飞升一条路。",
+    "escalates": "从「打不过」到「打不得」——敌人是他不能杀的人"
+   },
+   "chapter": 1405,
+   "realm": "人界",
+   "level": "渡劫初期",
+   "level_span": "1313~1405",
+   "power": 345510.7,
+   "rank": 0.9231,
+   "state_c1": {
+    "左眉骨": "一道三厘米的旧疤",
+    "境界": "渡劫初期"
+   },
+   "state_c2": {
+    "右手": "缺了半截小指"
+   },
+   "state_c3": {
+    "左耳": "耳垂上有个豁口",
+    "关系": "道侣"
+   },
+   "due_foreshadow": [],
+   "overdue": [],
+   "inject_chars": 1805,
+   "inject_block": "【作品】《》｜\n【一句话】\n【进度】第 1405 / 5000 章（第 29/100 卷 · 第 1 弧）\n\n【力量体系 · 第 1405 章】\n当前界：人界（炼精化气。修士以肉身承载灵气，寿元不过三百。）\n当前境界：渡劫初期（第 1313~1405 章）\n下一阶：渡劫中期（第 1406 章起）\n本界境界序列：炼气 → 筑基 → 金丹 → 元婴 → 化神 → 炼虚 → 合体 → 大乘 → 渡劫\n硬规则：境界共四界三十六境，每境三阶（初期/中期/后期），共一百零八阶。；境界不可跳级。可以借外力短时爆发，但事后必然反噬。；跨界飞升会受界壁压制，境界暂时跌落至新界底层，需重新攀升。；死者不可复生。任何复活情节都是设定错误。\n\n【世界状态 · 第 1405 章】\n故事内时间：人界·化神 · 三年后\n\n▸ 林昭\n  · 左眉骨：一道三厘米的旧疤\n  · 境界：渡劫初期\n  · 数值：战力 1756\n  · 声音：语气=冷硬，少废话；口头禅=嗯/走；绝不说=其实/或许\n\n▸ 沈鹤年\n  · 右手：缺了半截小指\n  · 数值：战力 1756\n  · 声音：语气=慢，爱用反问；口头禅=你说呢；绝不说=综上所述\n\n▸ 苏见月\n  · 左耳：耳垂上有个豁口\n  · 关系：道侣\n  · 数值：战力 1756\n  · 声音：语气=短促，带刺；口头禅=废话；绝不说=抱歉\n\n【世界硬规则】\n  · 境界共四界三十六境，每境三阶（初期/中期/后期），共一百零八阶。\n  · 境界不可跳级。可以借外力短时爆发，但事后必然反噬。\n  · 跨界飞升会受界壁压制，境界暂时跌落至新界底层，需重新攀升。\n  · 死者不可复生。任何复活情节都是设定错误。\n  · 神格唯一。同一神格不能同时存在两个持有者。\n\n【本卷目标】第29卷：卷目标29\n\n【上一章最后一段（原文，必须无缝接上）】\n他关上了门。门外有人在等。\n\n\n【写作契约·硬约束，违反任何一条都算失败】\n\n一、句子\n- 平均句长 12~18 字。每 200 字内至少出现 2 个 8 字以内的短句。\n- 禁止连续 3 个长句。长句之后必须跟短句。\n- 句长必须有明显起伏：最短 2 字，最长可到 50 字。\n\n二、描写\n- 只写\"摄像机拍得到、录音机录得到\"的东西：动作、器物、声音、气味、温度、光影。\n- 不写\"他感到\"\"他心想\"\"他意识到\"。\n- 抽象名词（命运、意义、救赎、灵魂、价值、本质）全篇出现不超过 3 次。\n\n三、对话\n- 对话必须口语化，允许打断、答非所问、说半句、沉默。\n- 禁止解释性台词（\"你知道的，自从那件事以后……\"这种交代信息的句子）。\n- 每个主要人物有独立的说话方式：句子长短、口头禅、避讳的词，都不同。\n\n四、结构\n- 每段结尾停在具体动作或物件上，不做总结。\n- 场景转换用硬切，不用\"与此同时\"之类的过渡。\n- 不解释因果。把因果留给读者。\n\n五、禁用词（出现任何一个即判定失败）\n仿佛、似乎、不禁、不由得、缓缓、微微、轻轻、悄然、默默、一丝、一抹、一缕、 几分、些许、隐约、恍惚、如同、宛如、犹如、恰似、瞳孔骤缩、瞳孔微缩、 嘴角勾起、嘴角微微上扬、眼底闪过、眼中闪过、不易察觉、若有所思、意味深长、 深吸一口气、缓缓开口、沉默片刻、良久、叹了口气、苦笑一声、眼神复杂、 神色复杂、心中涌起、心头一震、心中一惊、五味杂陈、百感交集、如遭雷击、 难以言喻、无法言说、不知为何、与此同时、然而、尽管如此、总而言之、 换句话说、值得一提的是、命运的齿轮、冥冥之中、这一刻、就在这一刻、 终于明白、恍然大悟、一切都不一样了、无尽的、深深的、淡淡的、莫名的、 前所未有的、难以形容的、无法抗拒的、令人窒息的、如同时间静止、 仿佛时间静止、仿佛整个世界、如同一道闪电、如同一记重锤\n\n六、禁用结构\n1. 禁止段末总结/升华。段落的最后一句必须是具体动作、具体物件、或一句对话。\n2. 禁止\"不仅…而且\"\"既…又\"\"不是…而是\"这类对仗句式。\n3. 禁止三句以上连续排比。\n4. 禁止用\"他感到/他觉得/他心中\"引出情绪，改用身体反应或动作失误。\n5. 禁止解释人物为什么这么做。读者要自己看出来。\n6. 禁止让配角说出主题句。主题只能由情节呈现。\n7. 禁止\"总结全文\"式结尾。\n8. 禁止每段长度相近。段落必须有长有短，最短可以只有一行。\n"
+  },
+  {
+   "cast_now": [
+    {
+     "id": "c4",
+     "name": "陆无咎",
+     "role": "宿敌",
+     "level": "灵帝中期",
+     "level_index": 47,
+     "voice": {
+      "语气": "拖长音，阴阳怪气，爱用敬语说狠话",
+      "句长": "中",
+      "口头禅": [
+       "有意思",
+       "请吧",
+       "恕不奉陪"
+      ],
+      "禁用词": [
+       "谢谢",
+       "感激"
+      ],
+      "自称": "在下 / 本座"
+     }
+    },
+    {
+     "id": "c2",
+     "name": "沈鹤年",
+     "role": "师父",
+     "level": "灵尊中期",
+     "level_index": 41,
+     "voice": {
+      "语气": "慢，爱用反问，从不下判断句",
+      "句长": "长",
+      "口头禅": [
+       "你说呢",
+       "未必",
+       "急什么"
+      ],
+      "禁用词": [
+       "综上所述",
+       "必然",
+       "一定"
+      ],
+      "自称": "老夫（对外）/ 我（对林昭）"
+     }
+    },
+    {
+     "id": "c1",
+     "name": "林昭",
+     "role": "主角",
+     "level": "灵徒初期",
+     "level_index": 28,
+     "voice": {
+      "语气": "冷硬，少废话，情绪从不外露",
+      "句长": "短",
+      "口头禅": [
+       "嗯",
+       "走",
+       "不用"
+      ],
+      "禁用词": [
+       "其实",
+       "或许",
+       "我觉得"
+      ],
+      "自称": "我"
+     }
+    },
+    {
+     "id": "c3",
+     "name": "苏见月",
+     "role": "道侣",
+     "level": "渡劫初期",
+     "level_index": 25,
+     "voice": {
+      "语气": "短促，带刺，越亲近越刻薄",
+      "句长": "短",
+      "口头禅": [
+       "废话",
+       "闭嘴",
+       "烦"
+      ],
+      "禁用词": [
+       "抱歉",
+       "对不起",
+       "谢谢"
+      ],
+      "自称": "我"
+     }
+    },
+    {
+     "id": "c7",
+     "name": "林小满",
+     "role": "亲人",
+     "level": "炼气初期",
+     "level_index": 1,
+     "voice": {
+      "语气": "直白，爱抱怨，说话带青牛镇口音",
+      "句长": "短",
+      "口头禅": [
+       "哥",
+       "你别管",
+       "真的假的"
+      ],
+      "禁用词": [
+       "在下",
+       "本座",
+       "道友"
+      ],
+      "自称": "我"
+     }
+    }
+   ],
+   "chapter_outline": {
+    "no": 1601,
+    "title": "断窗录重",
+    "goal": "在灵徒初期境界下，拿到一个承诺",
+    "level": "灵徒初期",
+    "words": 4000,
+    "ends_with": "苏见月看了一眼一截麻绳，又走了，没回头。",
+    "turn": "认知发生不可逆变化",
+    "beats": [
+     {
+      "text": "在渡口，陆无咎当着所有人的面推开半张契。",
+      "kind": "冲突"
+     },
+     {
+      "text": "沈鹤年在崖边才摊开那盏灯，手没抖。",
+      "kind": "揭示"
+     },
+     {
+      "text": "苏见月把母亲的铜镜反倒交出，站在旧屋。",
+      "kind": "代价"
+     },
+     {
+      "text": "林小满在雪地里再留住带血的布，手没抖。",
+      "kind": "转折"
+     }
+    ]
+   },
+   "volume": {
+    "no": 33,
+    "name": "第33卷 · 灵界·痕薪",
+    "goal": "绝对战力还在，但界壁把他压成最底层。旧身份一文不值。｜本卷推进到 灵徒初期，但代价是毁掉一处退路",
+    "escalates": "从「守护」到「复仇」——动机变了，人也就变了｜第33卷把这一层的代价推到极限",
+    "start": 1601,
+    "end": 1650
+   },
+   "arc": {
+    "no": 161,
+    "name": "起·局",
+    "goal": "起段：在灵徒初期境界下，把「绝对战力还在，但界壁把他压成」推进一层",
+    "escalates": "建立规则",
+    "start": 1601,
+    "end": 1610
+   },
+   "act": {
+    "no": 3,
+    "name": "第三幕 · 灵界蝼蚁",
+    "conflict": "绝对战力还在，但界壁把他压成最底层。旧身份一文不值。",
+    "irreversible": "苏见月身死。林昭第一次为了复仇而修行，而不是为了守护。",
+    "escalates": "从「守护」到「复仇」——动机变了，人也就变了"
+   },
+   "chapter": 1601,
+   "realm": "灵界",
+   "level": "灵徒初期",
+   "level_span": "1601~1618",
+   "power": 2000000.0,
+   "rank": 0.0,
+   "state_c1": {
+    "左眉骨": "一道三厘米的旧疤",
+    "境界": "灵徒初期",
+    "所在": "灵界·浮屠域"
+   },
+   "state_c2": {
+    "右手": "缺了半截小指",
+    "身份": "灵界·浮屠域接引使"
+   },
+   "state_c3": {
+    "左耳": "耳垂上有个豁口",
+    "关系": "道侣"
+   },
+   "due_foreshadow": [],
+   "overdue": [
+    {
+     "id": "f2",
+     "content": "母亲留下的铜镜背面刻着一行看不懂的字",
+     "planted": 450
+    }
+   ],
+   "inject_chars": 1911,
+   "inject_block": "【作品】《》｜\n【一句话】\n【进度】第 1601 / 5000 章（第 33/100 卷 · 第 1 弧）\n\n【力量体系 · 第 1601 章】\n当前界：灵界（炼气化神。灵界以灵根为本，无灵根者如凡人。）\n当前境界：灵徒初期（第 1601~1618 章）\n下一阶：灵徒中期（第 1619 章起）\n本界境界序列：灵徒 → 灵师 → 灵王 → 灵皇 → 灵尊 → 灵圣 → 灵帝 → 灵祖 → 灵源\n硬规则：境界共四界三十六境，每境三阶（初期/中期/后期），共一百零八阶。；境界不可跳级。可以借外力短时爆发，但事后必然反噬。；跨界飞升会受界壁压制，境界暂时跌落至新界底层，需重新攀升。；死者不可复生。任何复活情节都是设定错误。\n\n【世界状态 · 第 1601 章】\n故事内时间：灵界·初临 · 界壁压制\n\n▸ 林昭\n  · 左眉骨：一道三厘米的旧疤\n  · 境界：灵徒初期\n  · 所在：灵界·浮屠域\n  · 数值：战力 2000\n  · 声音：语气=冷硬，少废话；口头禅=嗯/走；绝不说=其实/或许\n\n▸ 沈鹤年\n  · 右手：缺了半截小指\n  · 身份：灵界·浮屠域接引使\n  · 数值：战力 2000\n  · 声音：语气=慢，爱用反问；口头禅=你说呢；绝不说=综上所述\n\n▸ 苏见月\n  · 左耳：耳垂上有个豁口\n  · 关系：道侣\n  · 数值：战力 2000\n  · 声音：语气=短促，带刺；口头禅=废话；绝不说=抱歉\n\n【⚠️ 逾期未回收 1 条：f2】\n\n【世界硬规则】\n  · 境界共四界三十六境，每境三阶（初期/中期/后期），共一百零八阶。\n  · 境界不可跳级。可以借外力短时爆发，但事后必然反噬。\n  · 跨界飞升会受界壁压制，境界暂时跌落至新界底层，需重新攀升。\n  · 死者不可复生。任何复活情节都是设定错误。\n  · 神格唯一。同一神格不能同时存在两个持有者。\n\n【本卷目标】第33卷：卷目标33\n\n【本章】第1601章\n  · 事件一\n  · 事件二\n  · 事件三\n  · 本章必须停在这里：他关上了门。\n\n【上一章最后一段（原文，必须无缝接上）】\n他关上了门。门外有人在等。\n\n\n【写作契约·硬约束，违反任何一条都算失败】\n\n一、句子\n- 平均句长 12~18 字。每 200 字内至少出现 2 个 8 字以内的短句。\n- 禁止连续 3 个长句。长句之后必须跟短句。\n- 句长必须有明显起伏：最短 2 字，最长可到 50 字。\n\n二、描写\n- 只写\"摄像机拍得到、录音机录得到\"的东西：动作、器物、声音、气味、温度、光影。\n- 不写\"他感到\"\"他心想\"\"他意识到\"。\n- 抽象名词（命运、意义、救赎、灵魂、价值、本质）全篇出现不超过 3 次。\n\n三、对话\n- 对话必须口语化，允许打断、答非所问、说半句、沉默。\n- 禁止解释性台词（\"你知道的，自从那件事以后……\"这种交代信息的句子）。\n- 每个主要人物有独立的说话方式：句子长短、口头禅、避讳的词，都不同。\n\n四、结构\n- 每段结尾停在具体动作或物件上，不做总结。\n- 场景转换用硬切，不用\"与此同时\"之类的过渡。\n- 不解释因果。把因果留给读者。\n\n五、禁用词（出现任何一个即判定失败）\n仿佛、似乎、不禁、不由得、缓缓、微微、轻轻、悄然、默默、一丝、一抹、一缕、 几分、些许、隐约、恍惚、如同、宛如、犹如、恰似、瞳孔骤缩、瞳孔微缩、 嘴角勾起、嘴角微微上扬、眼底闪过、眼中闪过、不易察觉、若有所思、意味深长、 深吸一口气、缓缓开口、沉默片刻、良久、叹了口气、苦笑一声、眼神复杂、 神色复杂、心中涌起、心头一震、心中一惊、五味杂陈、百感交集、如遭雷击、 难以言喻、无法言说、不知为何、与此同时、然而、尽管如此、总而言之、 换句话说、值得一提的是、命运的齿轮、冥冥之中、这一刻、就在这一刻、 终于明白、恍然大悟、一切都不一样了、无尽的、深深的、淡淡的、莫名的、 前所未有的、难以形容的、无法抗拒的、令人窒息的、如同时间静止、 仿佛时间静止、仿佛整个世界、如同一道闪电、如同一记重锤\n\n六、禁用结构\n1. 禁止段末总结/升华。段落的最后一句必须是具体动作、具体物件、或一句对话。\n2. 禁止\"不仅…而且\"\"既…又\"\"不是…而是\"这类对仗句式。\n3. 禁止三句以上连续排比。\n4. 禁止用\"他感到/他觉得/他心中\"引出情绪，改用身体反应或动作失误。\n5. 禁止解释人物为什么这么做。读者要自己看出来。\n6. 禁止让配角说出主题句。主题只能由情节呈现。\n7. 禁止\"总结全文\"式结尾。\n8. 禁止每段长度相近。段落必须有长有短，最短可以只有一行。\n"
+  },
+  {
+   "cast_now": [
+    {
+     "id": "c4",
+     "name": "陆无咎",
+     "role": "宿敌",
+     "level": "灵帝中期",
+     "level_index": 47,
+     "voice": {
+      "语气": "拖长音，阴阳怪气，爱用敬语说狠话",
+      "句长": "中",
+      "口头禅": [
+       "有意思",
+       "请吧",
+       "恕不奉陪"
+      ],
+      "禁用词": [
+       "谢谢",
+       "感激"
+      ],
+      "自称": "在下 / 本座"
+     }
+    },
+    {
+     "id": "c1",
+     "name": "林昭",
+     "role": "主角",
+     "level": "灵尊后期",
+     "level_index": 42,
+     "voice": {
+      "语气": "冷硬，少废话，情绪从不外露",
+      "句长": "短",
+      "口头禅": [
+       "嗯",
+       "走",
+       "不用"
+      ],
+      "禁用词": [
+       "其实",
+       "或许",
+       "我觉得"
+      ],
+      "自称": "我"
+     }
+    },
+    {
+     "id": "c2",
+     "name": "沈鹤年",
+     "role": "师父",
+     "level": "灵尊中期",
+     "level_index": 41,
+     "voice": {
+      "语气": "慢，爱用反问，从不下判断句",
+      "句长": "长",
+      "口头禅": [
+       "你说呢",
+       "未必",
+       "急什么"
+      ],
+      "禁用词": [
+       "综上所述",
+       "必然",
+       "一定"
+      ],
+      "自称": "老夫（对外）/ 我（对林昭）"
+     }
+    },
+    {
+     "id": "c3",
+     "name": "苏见月",
+     "role": "道侣",
+     "level": "灵皇中期",
+     "level_index": 38,
+     "voice": {
+      "语气": "短促，带刺，越亲近越刻薄",
+      "句长": "短",
+      "口头禅": [
+       "废话",
+       "闭嘴",
+       "烦"
+      ],
+      "禁用词": [
+       "抱歉",
+       "对不起",
+       "谢谢"
+      ],
+      "自称": "我"
+     }
+    },
+    {
+     "id": "c8",
+     "name": "玄冥",
+     "role": "宿敌",
+     "level": "灵皇中期",
+     "level_index": 38,
+     "voice": {
+      "语气": "平，慢，从不用感叹句",
+      "句长": "中",
+      "口头禅": [
+       "哦",
+       "继续"
+      ],
+      "禁用词": [
+       "啊",
+       "呀",
+       "呢"
+      ],
+      "自称": "本尊"
+     }
+    }
+   ],
+   "chapter_outline": {
+    "no": 2100,
+    "title": "归阶契新",
+    "goal": "在灵尊后期境界下，确认一件事",
+    "level": "灵尊后期",
+    "words": 4000,
+    "ends_with": "灯下只剩下过期的药，沈鹤年反倒走了。",
+    "turn": "关系发生不可逆变化",
+    "beats": [
+     {
+      "text": "在灯下，那盏灯当着所有人的面被陆无咎拆开，没人敢看。",
+      "kind": "冲突"
+     },
+     {
+      "text": "在祠堂，陆无咎先摊开过期的药。",
+      "kind": "揭示"
+     },
+     {
+      "text": "在崖边，断了的指骨终究被玄冥烧掉，没人敢看。",
+      "kind": "代价"
+     },
+     {
+      "text": "陆无咎在灯下没放下断了的指骨，手没抖。",
+      "kind": "转折"
+     }
+    ]
+   },
+   "volume": {
+    "no": 42,
+    "name": "第42卷 · 灵界·雪窗",
+    "goal": "绝对战力还在，但界壁把他压成最底层。旧身份一文不值。｜本卷推进到 灵尊中期，但代价是失去一个盟友",
+    "escalates": "从「守护」到「复仇」——动机变了，人也就变了｜第42卷把这一层的代价推到极限",
+    "start": 2051,
+    "end": 2100
+   },
+   "arc": {
+    "no": 210,
+    "name": "余·波",
+    "goal": "合段：在灵尊后期境界下，把「绝对战力还在，但界壁把他压成」推进一层",
+    "escalates": "余震",
+    "start": 2091,
+    "end": 2100
+   },
+   "act": {
+    "no": 3,
+    "name": "第三幕 · 灵界蝼蚁",
+    "conflict": "绝对战力还在，但界壁把他压成最底层。旧身份一文不值。",
+    "irreversible": "苏见月身死。林昭第一次为了复仇而修行，而不是为了守护。",
+    "escalates": "从「守护」到「复仇」——动机变了，人也就变了"
+   },
+   "chapter": 2100,
+   "realm": "灵界",
+   "level": "灵尊后期",
+   "level_span": "2090~2143",
+   "power": 56796495.1,
+   "rank": 0.5385,
+   "state_c1": {
+    "左眉骨": "一道三厘米的旧疤",
+    "右臂": "断，接不上了",
+    "所在": "灵界·浮屠域"
+   },
+   "state_c2": {
+    "右手": "缺了半截小指",
+    "身份": "灵界·浮屠域接引使"
+   },
+   "state_c3": {
+    "左耳": "耳垂上有个豁口",
+    "关系": "道侣"
+   },
+   "due_foreshadow": [],
+   "overdue": [
+    {
+     "id": "f2",
+     "content": "母亲留下的铜镜背面刻着一行看不懂的字",
+     "planted": 450
+    }
+   ],
+   "inject_chars": 1913,
+   "inject_block": "【作品】《》｜\n【一句话】\n【进度】第 2100 / 5000 章（第 42/100 卷 · 第 5 弧）\n\n【力量体系 · 第 2100 章】\n当前界：灵界（炼气化神。灵界以灵根为本，无灵根者如凡人。）\n当前境界：灵尊后期（第 2090~2143 章）\n下一阶：灵圣初期（第 2144 章起）\n本界境界序列：灵徒 → 灵师 → 灵王 → 灵皇 → 灵尊 → 灵圣 → 灵帝 → 灵祖 → 灵源\n硬规则：境界共四界三十六境，每境三阶（初期/中期/后期），共一百零八阶。；境界不可跳级。可以借外力短时爆发，但事后必然反噬。；跨界飞升会受界壁压制，境界暂时跌落至新界底层，需重新攀升。；死者不可复生。任何复活情节都是设定错误。\n\n【世界状态 · 第 2100 章】\n故事内时间：灵界·初临 · 界壁压制\n\n▸ 林昭\n  · 左眉骨：一道三厘米的旧疤\n  · 右臂：断，接不上了\n  · 所在：灵界·浮屠域\n  · 数值：战力 7900\n  · 声音：语气=冷硬，少废话；口头禅=嗯/走；绝不说=其实/或许\n\n▸ 沈鹤年\n  · 右手：缺了半截小指\n  · 身份：灵界·浮屠域接引使\n  · 数值：战力 7900\n  · 声音：语气=慢，爱用反问；口头禅=你说呢；绝不说=综上所述\n\n▸ 苏见月\n  · 左耳：耳垂上有个豁口\n  · 关系：道侣\n  · 数值：战力 7900\n  · 声音：语气=短促，带刺；口头禅=废话；绝不说=抱歉\n\n【⚠️ 逾期未回收 1 条：f2】\n\n【世界硬规则】\n  · 境界共四界三十六境，每境三阶（初期/中期/后期），共一百零八阶。\n  · 境界不可跳级。可以借外力短时爆发，但事后必然反噬。\n  · 跨界飞升会受界壁压制，境界暂时跌落至新界底层，需重新攀升。\n  · 死者不可复生。任何复活情节都是设定错误。\n  · 神格唯一。同一神格不能同时存在两个持有者。\n\n【本卷目标】第42卷：卷目标42\n\n【本章】第2100章\n  · 事件一\n  · 事件二\n  · 事件三\n  · 本章必须停在这里：他关上了门。\n\n【上一章最后一段（原文，必须无缝接上）】\n他关上了门。门外有人在等。\n\n\n【写作契约·硬约束，违反任何一条都算失败】\n\n一、句子\n- 平均句长 12~18 字。每 200 字内至少出现 2 个 8 字以内的短句。\n- 禁止连续 3 个长句。长句之后必须跟短句。\n- 句长必须有明显起伏：最短 2 字，最长可到 50 字。\n\n二、描写\n- 只写\"摄像机拍得到、录音机录得到\"的东西：动作、器物、声音、气味、温度、光影。\n- 不写\"他感到\"\"他心想\"\"他意识到\"。\n- 抽象名词（命运、意义、救赎、灵魂、价值、本质）全篇出现不超过 3 次。\n\n三、对话\n- 对话必须口语化，允许打断、答非所问、说半句、沉默。\n- 禁止解释性台词（\"你知道的，自从那件事以后……\"这种交代信息的句子）。\n- 每个主要人物有独立的说话方式：句子长短、口头禅、避讳的词，都不同。\n\n四、结构\n- 每段结尾停在具体动作或物件上，不做总结。\n- 场景转换用硬切，不用\"与此同时\"之类的过渡。\n- 不解释因果。把因果留给读者。\n\n五、禁用词（出现任何一个即判定失败）\n仿佛、似乎、不禁、不由得、缓缓、微微、轻轻、悄然、默默、一丝、一抹、一缕、 几分、些许、隐约、恍惚、如同、宛如、犹如、恰似、瞳孔骤缩、瞳孔微缩、 嘴角勾起、嘴角微微上扬、眼底闪过、眼中闪过、不易察觉、若有所思、意味深长、 深吸一口气、缓缓开口、沉默片刻、良久、叹了口气、苦笑一声、眼神复杂、 神色复杂、心中涌起、心头一震、心中一惊、五味杂陈、百感交集、如遭雷击、 难以言喻、无法言说、不知为何、与此同时、然而、尽管如此、总而言之、 换句话说、值得一提的是、命运的齿轮、冥冥之中、这一刻、就在这一刻、 终于明白、恍然大悟、一切都不一样了、无尽的、深深的、淡淡的、莫名的、 前所未有的、难以形容的、无法抗拒的、令人窒息的、如同时间静止、 仿佛时间静止、仿佛整个世界、如同一道闪电、如同一记重锤\n\n六、禁用结构\n1. 禁止段末总结/升华。段落的最后一句必须是具体动作、具体物件、或一句对话。\n2. 禁止\"不仅…而且\"\"既…又\"\"不是…而是\"这类对仗句式。\n3. 禁止三句以上连续排比。\n4. 禁止用\"他感到/他觉得/他心中\"引出情绪，改用身体反应或动作失误。\n5. 禁止解释人物为什么这么做。读者要自己看出来。\n6. 禁止让配角说出主题句。主题只能由情节呈现。\n7. 禁止\"总结全文\"式结尾。\n8. 禁止每段长度相近。段落必须有长有短，最短可以只有一行。\n"
+  },
+  {
+   "cast_now": [
+    {
+     "id": "c4",
+     "name": "陆无咎",
+     "role": "宿敌",
+     "level": "灵源中期",
+     "level_index": 53,
+     "voice": {
+      "语气": "拖长音，阴阳怪气，爱用敬语说狠话",
+      "句长": "中",
+      "口头禅": [
+       "有意思",
+       "请吧",
+       "恕不奉陪"
+      ],
+      "禁用词": [
+       "谢谢",
+       "感激"
+      ],
+      "自称": "在下 / 本座"
+     }
+    },
+    {
+     "id": "c8",
+     "name": "玄冥",
+     "role": "宿敌",
+     "level": "灵祖初期",
+     "level_index": 49,
+     "voice": {
+      "语气": "平，慢，从不用感叹句",
+      "句长": "中",
+      "口头禅": [
+       "哦",
+       "继续"
+      ],
+      "禁用词": [
+       "啊",
+       "呀",
+       "呢"
+      ],
+      "自称": "本尊"
+     }
+    },
+    {
+     "id": "c2",
+     "name": "沈鹤年",
+     "role": "师父",
+     "level": "灵帝后期",
+     "level_index": 48,
+     "voice": {
+      "语气": "慢，爱用反问，从不下判断句",
+      "句长": "长",
+      "口头禅": [
+       "你说呢",
+       "未必",
+       "急什么"
+      ],
+      "禁用词": [
+       "综上所述",
+       "必然",
+       "一定"
+      ],
+      "自称": "老夫（对外）/ 我（对林昭）"
+     }
+    },
+    {
+     "id": "c1",
+     "name": "林昭",
+     "role": "主角",
+     "level": "灵帝中期",
+     "level_index": 47,
+     "voice": {
+      "语气": "冷硬，少废话，情绪从不外露",
+      "句长": "短",
+      "口头禅": [
+       "嗯",
+       "走",
+       "不用"
+      ],
+      "禁用词": [
+       "其实",
+       "或许",
+       "我觉得"
+      ],
+      "自称": "我"
+     }
+    },
+    {
+     "id": "c3",
+     "name": "苏见月",
+     "role": "道侣",
+     "level": "灵帝中期",
+     "level_index": 47,
+     "voice": {
+      "语气": "短促，带刺，越亲近越刻薄",
+      "句长": "短",
+      "口头禅": [
+       "废话",
+       "闭嘴",
+       "烦"
+      ],
+      "禁用词": [
+       "抱歉",
+       "对不起",
+       "谢谢"
+      ],
+      "自称": "我"
+     }
+    }
+   ],
+   "chapter_outline": {
+    "no": 2400,
+    "title": "痕灯册八",
+    "goal": "在灵帝中期境界下，还清一笔债",
+    "level": "灵帝中期",
+    "words": 4000,
+    "ends_with": "一枚旧印还在祠堂，才没人去捡，苏见月也没动。",
+    "turn": "立场发生不可逆变化",
+    "beats": [
+     {
+      "text": "沈鹤年没摔碎写了一半的信的时候，灯下只有风。",
+      "kind": "冲突"
+     },
+     {
+      "text": "林昭没摊开断了的指骨的时候，渡口只有风。",
+      "kind": "揭示"
+     },
+     {
+      "text": "半张契被玄冥没割下，在旧屋。",
+      "kind": "代价"
+     },
+     {
+      "text": "玄冥才把一块碎瓦推回，在雪地里，谁都没拦。",
+      "kind": "转折"
+     }
+    ]
+   },
+   "volume": {
+    "no": 48,
+    "name": "第48卷 · 灵界·焚钟",
+    "goal": "绝对战力还在，但界壁把他压成最底层。旧身份一文不值。｜本卷推进到 灵帝初期，但代价是失去一个盟友",
+    "escalates": "从「守护」到「复仇」——动机变了，人也就变了｜第48卷把这一层的代价推到极限",
+    "start": 2351,
+    "end": 2400
+   },
+   "arc": {
+    "no": 240,
+    "name": "余·波",
+    "goal": "合段：在灵帝中期境界下，把「绝对战力还在，但界壁把他压成」推进一层",
+    "escalates": "余震",
+    "start": 2391,
+    "end": 2400
+   },
+   "act": {
+    "no": 3,
+    "name": "第三幕 · 灵界蝼蚁",
+    "conflict": "绝对战力还在，但界壁把他压成最底层。旧身份一文不值。",
+    "irreversible": "苏见月身死。林昭第一次为了复仇而修行，而不是为了守护。",
+    "escalates": "从「守护」到「复仇」——动机变了，人也就变了"
+   },
+   "chapter": 2400,
+   "realm": "灵界",
+   "level": "灵帝中期",
+   "level_span": "2388~2454",
+   "power": 187652446.0,
+   "rank": 0.7308,
+   "state_c1": {
+    "左眉骨": "一道三厘米的旧疤",
+    "右臂": "断，接不上了",
+    "所在": "灵界·浮屠域"
+   },
+   "state_c2": {
+    "右手": "缺了半截小指",
+    "身份": "灵界·浮屠域接引使"
+   },
+   "state_c3": {
+    "左耳": "耳垂上有个豁口",
+    "关系": "道侣"
+   },
+   "due_foreshadow": [
+    {
+     "id": "f4",
+     "content": "断臂后梦里总有人叫他去西边",
+     "planted": 2100,
+     "window": [
+      2400,
+      2500
+     ]
+    }
+   ],
+   "overdue": [
+    {
+     "id": "f2",
+     "content": "母亲留下的铜镜背面刻着一行看不懂的字",
+     "planted": 450
+    }
+   ],
+   "inject_chars": 1966,
+   "inject_block": "【作品】《》｜\n【一句话】\n【进度】第 2400 / 5000 章（第 48/100 卷 · 第 5 弧）\n\n【力量体系 · 第 2400 章】\n当前界：灵界（炼气化神。灵界以灵根为本，无灵根者如凡人。）\n当前境界：灵帝中期（第 2388~2454 章）\n下一阶：灵帝后期（第 2455 章起）\n本界境界序列：灵徒 → 灵师 → 灵王 → 灵皇 → 灵尊 → 灵圣 → 灵帝 → 灵祖 → 灵源\n硬规则：境界共四界三十六境，每境三阶（初期/中期/后期），共一百零八阶。；境界不可跳级。可以借外力短时爆发，但事后必然反噬。；跨界飞升会受界壁压制，境界暂时跌落至新界底层，需重新攀升。；死者不可复生。任何复活情节都是设定错误。\n\n【世界状态 · 第 2400 章】\n故事内时间：灵界·初临 · 界壁压制\n\n▸ 林昭\n  · 左眉骨：一道三厘米的旧疤\n  · 右臂：断，接不上了\n  · 所在：灵界·浮屠域\n  · 数值：战力 13600\n  · 声音：语气=冷硬，少废话；口头禅=嗯/走；绝不说=其实/或许\n\n▸ 沈鹤年\n  · 右手：缺了半截小指\n  · 身份：灵界·浮屠域接引使\n  · 数值：战力 13600\n  · 声音：语气=慢，爱用反问；口头禅=你说呢；绝不说=综上所述\n\n▸ 苏见月\n  · 左耳：耳垂上有个豁口\n  · 关系：道侣\n  · 数值：战力 13600\n  · 声音：语气=短促，带刺；口头禅=废话；绝不说=抱歉\n\n【即将到期的伏笔】\n  · 第2100章埋：断臂后梦里总有人叫他去西边（2500 章前必须回收）\n\n【⚠️ 逾期未回收 1 条：f2】\n\n【世界硬规则】\n  · 境界共四界三十六境，每境三阶（初期/中期/后期），共一百零八阶。\n  · 境界不可跳级。可以借外力短时爆发，但事后必然反噬。\n  · 跨界飞升会受界壁压制，境界暂时跌落至新界底层，需重新攀升。\n  · 死者不可复生。任何复活情节都是设定错误。\n  · 神格唯一。同一神格不能同时存在两个持有者。\n\n【本卷目标】第48卷：卷目标48\n\n【本章】第2400章\n  · 事件一\n  · 事件二\n  · 事件三\n  · 本章必须停在这里：他关上了门。\n\n【上一章最后一段（原文，必须无缝接上）】\n他关上了门。门外有人在等。\n\n\n【写作契约·硬约束，违反任何一条都算失败】\n\n一、句子\n- 平均句长 12~18 字。每 200 字内至少出现 2 个 8 字以内的短句。\n- 禁止连续 3 个长句。长句之后必须跟短句。\n- 句长必须有明显起伏：最短 2 字，最长可到 50 字。\n\n二、描写\n- 只写\"摄像机拍得到、录音机录得到\"的东西：动作、器物、声音、气味、温度、光影。\n- 不写\"他感到\"\"他心想\"\"他意识到\"。\n- 抽象名词（命运、意义、救赎、灵魂、价值、本质）全篇出现不超过 3 次。\n\n三、对话\n- 对话必须口语化，允许打断、答非所问、说半句、沉默。\n- 禁止解释性台词（\"你知道的，自从那件事以后……\"这种交代信息的句子）。\n- 每个主要人物有独立的说话方式：句子长短、口头禅、避讳的词，都不同。\n\n四、结构\n- 每段结尾停在具体动作或物件上，不做总结。\n- 场景转换用硬切，不用\"与此同时\"之类的过渡。\n- 不解释因果。把因果留给读者。\n\n五、禁用词（出现任何一个即判定失败）\n仿佛、似乎、不禁、不由得、缓缓、微微、轻轻、悄然、默默、一丝、一抹、一缕、 几分、些许、隐约、恍惚、如同、宛如、犹如、恰似、瞳孔骤缩、瞳孔微缩、 嘴角勾起、嘴角微微上扬、眼底闪过、眼中闪过、不易察觉、若有所思、意味深长、 深吸一口气、缓缓开口、沉默片刻、良久、叹了口气、苦笑一声、眼神复杂、 神色复杂、心中涌起、心头一震、心中一惊、五味杂陈、百感交集、如遭雷击、 难以言喻、无法言说、不知为何、与此同时、然而、尽管如此、总而言之、 换句话说、值得一提的是、命运的齿轮、冥冥之中、这一刻、就在这一刻、 终于明白、恍然大悟、一切都不一样了、无尽的、深深的、淡淡的、莫名的、 前所未有的、难以形容的、无法抗拒的、令人窒息的、如同时间静止、 仿佛时间静止、仿佛整个世界、如同一道闪电、如同一记重锤\n\n六、禁用结构\n1. 禁止段末总结/升华。段落的最后一句必须是具体动作、具体物件、或一句对话。\n2. 禁止\"不仅…而且\"\"既…又\"\"不是…而是\"这类对仗句式。\n3. 禁止三句以上连续排比。\n4. 禁止用\"他感到/他觉得/他心中\"引出情绪，改用身体反应或动作失误。\n5. 禁止解释人物为什么这么做。读者要自己看出来。\n6. 禁止让配角说出主题句。主题只能由情节呈现。\n7. 禁止\"总结全文\"式结尾。\n8. 禁止每段长度相近。段落必须有长有短，最短可以只有一行。\n"
+  },
+  {
+   "cast_now": [
+    {
+     "id": "c4",
+     "name": "陆无咎",
+     "role": "宿敌",
+     "level": "灵源中期",
+     "level_index": 53,
+     "voice": {
+      "语气": "拖长音，阴阳怪气，爱用敬语说狠话",
+      "句长": "中",
+      "口头禅": [
+       "有意思",
+       "请吧",
+       "恕不奉陪"
+      ],
+      "禁用词": [
+       "谢谢",
+       "感激"
+      ],
+      "自称": "在下 / 本座"
+     }
+    },
+    {
+     "id": "c8",
+     "name": "玄冥",
+     "role": "宿敌",
+     "level": "灵祖初期",
+     "level_index": 49,
+     "voice": {
+      "语气": "平，慢，从不用感叹句",
+      "句长": "中",
+      "口头禅": [
+       "哦",
+       "继续"
+      ],
+      "禁用词": [
+       "啊",
+       "呀",
+       "呢"
+      ],
+      "自称": "本尊"
+     }
+    },
+    {
+     "id": "c1",
+     "name": "林昭",
+     "role": "主角",
+     "level": "灵帝后期",
+     "level_index": 48,
+     "voice": {
+      "语气": "冷硬，少废话，情绪从不外露",
+      "句长": "短",
+      "口头禅": [
+       "嗯",
+       "走",
+       "不用"
+      ],
+      "禁用词": [
+       "其实",
+       "或许",
+       "我觉得"
+      ],
+      "自称": "我"
+     }
+    },
+    {
+     "id": "c2",
+     "name": "沈鹤年",
+     "role": "师父",
+     "level": "灵帝后期",
+     "level_index": 48,
+     "voice": {
+      "语气": "慢，爱用反问，从不下判断句",
+      "句长": "长",
+      "口头禅": [
+       "你说呢",
+       "未必",
+       "急什么"
+      ],
+      "禁用词": [
+       "综上所述",
+       "必然",
+       "一定"
+      ],
+      "自称": "老夫（对外）/ 我（对林昭）"
+     }
+    },
+    {
+     "id": "c3",
+     "name": "苏见月",
+     "role": "道侣",
+     "level": "灵帝中期",
+     "level_index": 47,
+     "voice": {
+      "语气": "短促，带刺，越亲近越刻薄",
+      "句长": "短",
+      "口头禅": [
+       "废话",
+       "闭嘴",
+       "烦"
+      ],
+      "禁用词": [
+       "抱歉",
+       "对不起",
+       "谢谢"
+      ],
+      "自称": "我"
+     }
+    }
+   ],
+   "chapter_outline": {
+    "no": 2500,
+    "title": "烬印约一",
+    "goal": "在灵帝后期境界下，找到一条退路",
+    "level": "灵帝后期",
+    "words": 4000,
+    "ends_with": "苏见月在灯下数了数，反倒把写了一半的信收了起来。",
+    "turn": "实力发生不可逆变化",
+    "beats": [
+     {
+      "text": "在渡口，沈鹤年没推开一块碎瓦。",
+      "kind": "冲突"
+     },
+     {
+      "text": "陆无咎才撕开烧焦的账本，在灯下，没人说话。",
+      "kind": "揭示"
+     },
+     {
+      "text": "过期的药在雪地里再被沈鹤年烧掉，一声没吭。",
+      "kind": "代价"
+     },
+     {
+      "text": "陆无咎在雪地里终究折好那盏灯，手没抖。",
+      "kind": "转折"
+     }
+    ]
+   },
+   "volume": {
+    "no": 50,
+    "name": "第50卷 · 灵界·雪刀",
+    "goal": "绝对战力还在，但界壁把他压成最底层。旧身份一文不值。｜本卷推进到 灵帝中期，但代价是欠下一笔债",
+    "escalates": "从「守护」到「复仇」——动机变了，人也就变了｜第50卷把这一层的代价推到极限",
+    "start": 2451,
+    "end": 2500
+   },
+   "arc": {
+    "no": 250,
+    "name": "余·波",
+    "goal": "合段：在灵帝后期境界下，把「绝对战力还在，但界壁把他压成」推进一层",
+    "escalates": "余震",
+    "start": 2491,
+    "end": 2500
+   },
+   "act": {
+    "no": 3,
+    "name": "第三幕 · 灵界蝼蚁",
+    "conflict": "绝对战力还在，但界壁把他压成最底层。旧身份一文不值。",
+    "irreversible": "苏见月身死。林昭第一次为了复仇而修行，而不是为了守护。",
+    "escalates": "从「守护」到「复仇」——动机变了，人也就变了"
+   },
+   "chapter": 2500,
+   "realm": "灵界",
+   "level": "灵帝后期",
+   "level_span": "2455~2524",
+   "power": 238320152.6,
+   "rank": 0.7692,
+   "state_c1": {
+    "左眉骨": "一道三厘米的旧疤",
+    "右臂": "已愈，但阴雨天会疼",
+    "所在": "灵界·浮屠域"
+   },
+   "state_c2": {
+    "右手": "缺了半截小指",
+    "身份": "灵界·浮屠域接引使"
+   },
+   "state_c3": {
+    "左耳": "耳垂上有个豁口",
+    "关系": "道侣"
+   },
+   "due_foreshadow": [
+    {
+     "id": "f4",
+     "content": "断臂后梦里总有人叫他去西边",
+     "planted": 2100,
+     "window": [
+      2400,
+      2500
+     ]
+    }
+   ],
+   "overdue": [
+    {
+     "id": "f2",
+     "content": "母亲留下的铜镜背面刻着一行看不懂的字",
+     "planted": 450
+    }
+   ],
+   "inject_chars": 1969,
+   "inject_block": "【作品】《》｜\n【一句话】\n【进度】第 2500 / 5000 章（第 50/100 卷 · 第 5 弧）\n\n【力量体系 · 第 2500 章】\n当前界：灵界（炼气化神。灵界以灵根为本，无灵根者如凡人。）\n当前境界：灵帝后期（第 2455~2524 章）\n下一阶：灵祖初期（第 2525 章起）\n本界境界序列：灵徒 → 灵师 → 灵王 → 灵皇 → 灵尊 → 灵圣 → 灵帝 → 灵祖 → 灵源\n硬规则：境界共四界三十六境，每境三阶（初期/中期/后期），共一百零八阶。；境界不可跳级。可以借外力短时爆发，但事后必然反噬。；跨界飞升会受界壁压制，境界暂时跌落至新界底层，需重新攀升。；死者不可复生。任何复活情节都是设定错误。\n\n【世界状态 · 第 2500 章】\n故事内时间：灵界·初临 · 界壁压制\n\n▸ 林昭\n  · 左眉骨：一道三厘米的旧疤\n  · 右臂：已愈，但阴雨天会疼\n  · 所在：灵界·浮屠域\n  · 数值：战力 15500\n  · 声音：语气=冷硬，少废话；口头禅=嗯/走；绝不说=其实/或许\n\n▸ 沈鹤年\n  · 右手：缺了半截小指\n  · 身份：灵界·浮屠域接引使\n  · 数值：战力 15500\n  · 声音：语气=慢，爱用反问；口头禅=你说呢；绝不说=综上所述\n\n▸ 苏见月\n  · 左耳：耳垂上有个豁口\n  · 关系：道侣\n  · 数值：战力 15500\n  · 声音：语气=短促，带刺；口头禅=废话；绝不说=抱歉\n\n【即将到期的伏笔】\n  · 第2100章埋：断臂后梦里总有人叫他去西边（2500 章前必须回收）\n\n【⚠️ 逾期未回收 1 条：f2】\n\n【世界硬规则】\n  · 境界共四界三十六境，每境三阶（初期/中期/后期），共一百零八阶。\n  · 境界不可跳级。可以借外力短时爆发，但事后必然反噬。\n  · 跨界飞升会受界壁压制，境界暂时跌落至新界底层，需重新攀升。\n  · 死者不可复生。任何复活情节都是设定错误。\n  · 神格唯一。同一神格不能同时存在两个持有者。\n\n【本卷目标】第50卷：卷目标50\n\n【本章】第2500章\n  · 事件一\n  · 事件二\n  · 事件三\n  · 本章必须停在这里：他关上了门。\n\n【上一章最后一段（原文，必须无缝接上）】\n他关上了门。门外有人在等。\n\n\n【写作契约·硬约束，违反任何一条都算失败】\n\n一、句子\n- 平均句长 12~18 字。每 200 字内至少出现 2 个 8 字以内的短句。\n- 禁止连续 3 个长句。长句之后必须跟短句。\n- 句长必须有明显起伏：最短 2 字，最长可到 50 字。\n\n二、描写\n- 只写\"摄像机拍得到、录音机录得到\"的东西：动作、器物、声音、气味、温度、光影。\n- 不写\"他感到\"\"他心想\"\"他意识到\"。\n- 抽象名词（命运、意义、救赎、灵魂、价值、本质）全篇出现不超过 3 次。\n\n三、对话\n- 对话必须口语化，允许打断、答非所问、说半句、沉默。\n- 禁止解释性台词（\"你知道的，自从那件事以后……\"这种交代信息的句子）。\n- 每个主要人物有独立的说话方式：句子长短、口头禅、避讳的词，都不同。\n\n四、结构\n- 每段结尾停在具体动作或物件上，不做总结。\n- 场景转换用硬切，不用\"与此同时\"之类的过渡。\n- 不解释因果。把因果留给读者。\n\n五、禁用词（出现任何一个即判定失败）\n仿佛、似乎、不禁、不由得、缓缓、微微、轻轻、悄然、默默、一丝、一抹、一缕、 几分、些许、隐约、恍惚、如同、宛如、犹如、恰似、瞳孔骤缩、瞳孔微缩、 嘴角勾起、嘴角微微上扬、眼底闪过、眼中闪过、不易察觉、若有所思、意味深长、 深吸一口气、缓缓开口、沉默片刻、良久、叹了口气、苦笑一声、眼神复杂、 神色复杂、心中涌起、心头一震、心中一惊、五味杂陈、百感交集、如遭雷击、 难以言喻、无法言说、不知为何、与此同时、然而、尽管如此、总而言之、 换句话说、值得一提的是、命运的齿轮、冥冥之中、这一刻、就在这一刻、 终于明白、恍然大悟、一切都不一样了、无尽的、深深的、淡淡的、莫名的、 前所未有的、难以形容的、无法抗拒的、令人窒息的、如同时间静止、 仿佛时间静止、仿佛整个世界、如同一道闪电、如同一记重锤\n\n六、禁用结构\n1. 禁止段末总结/升华。段落的最后一句必须是具体动作、具体物件、或一句对话。\n2. 禁止\"不仅…而且\"\"既…又\"\"不是…而是\"这类对仗句式。\n3. 禁止三句以上连续排比。\n4. 禁止用\"他感到/他觉得/他心中\"引出情绪，改用身体反应或动作失误。\n5. 禁止解释人物为什么这么做。读者要自己看出来。\n6. 禁止让配角说出主题句。主题只能由情节呈现。\n7. 禁止\"总结全文\"式结尾。\n8. 禁止每段长度相近。段落必须有长有短，最短可以只有一行。\n"
+  },
+  {
+   "cast_now": [
+    {
+     "id": "c4",
+     "name": "陆无咎",
+     "role": "宿敌",
+     "level": "太乙中期",
+     "level_index": 68,
+     "voice": {
+      "语气": "拖长音，阴阳怪气，爱用敬语说狠话",
+      "句长": "中",
+      "口头禅": [
+       "有意思",
+       "请吧",
+       "恕不奉陪"
+      ],
+      "禁用词": [
+       "谢谢",
+       "感激"
+      ],
+      "自称": "在下 / 本座"
+     }
+    },
+    {
+     "id": "c5",
+     "name": "白蘅",
+     "role": "引路人",
+     "level": "太乙中期",
+     "level_index": 68,
+     "voice": {
+      "语气": "轻，几乎不表态，句子常不完整",
+      "句长": "短",
+      "口头禅": [
+       "……",
+       "也许吧"
+      ],
+      "禁用词": [
+       "我保证",
+       "一定",
+       "肯定"
+      ],
+      "自称": "我"
+     }
+    },
+    {
+     "id": "c1",
+     "name": "林昭",
+     "role": "主角",
+     "level": "散仙初期",
+     "level_index": 55,
+     "voice": {
+      "语气": "冷硬，少废话，情绪从不外露",
+      "句长": "短",
+      "口头禅": [
+       "嗯",
+       "走",
+       "不用"
+      ],
+      "禁用词": [
+       "其实",
+       "或许",
+       "我觉得"
+      ],
+      "自称": "我"
+     }
+    },
+    {
+     "id": "c2",
+     "name": "沈鹤年",
+     "role": "师父",
+     "level": "灵帝后期",
+     "level_index": 48,
+     "voice": {
+      "语气": "慢，爱用反问，从不下判断句",
+      "句长": "长",
+      "口头禅": [
+       "你说呢",
+       "未必",
+       "急什么"
+      ],
+      "禁用词": [
+       "综上所述",
+       "必然",
+       "一定"
+      ],
+      "自称": "老夫（对外）/ 我（对林昭）"
+     }
+    }
+   ],
+   "chapter_outline": {
+    "no": 3001,
+    "title": "断绳册十",
+    "goal": "在散仙初期境界下，拿到一件东西",
+    "level": "散仙初期",
+    "words": 4000,
+    "ends_with": "白蘅把断了的指骨折好放进内兜，终究离开了祠堂。",
+    "turn": "立场发生不可逆变化",
+    "beats": [
+     {
+      "text": "在灯下，沈鹤年把过期的药才夺走，转身就走。",
+      "kind": "冲突"
+     },
+     {
+      "text": "在灯下，陆无咎把带血的布反倒摊开，转身就走。",
+      "kind": "揭示"
+     },
+     {
+      "text": "在雪地里，一枚旧印当着所有人的面被沈鹤年砸烂，没人敢看。",
+      "kind": "代价"
+     },
+     {
+      "text": "在渡口，陆无咎又折好半张契。",
+      "kind": "转折"
+     }
+    ]
+   },
+   "volume": {
+    "no": 61,
+    "name": "第61卷 · 仙界·锁瓦",
+    "goal": "仙位有限，得夺。夺来的仙位带着别人的因果。｜本卷推进到 散仙初期，但代价是暴露一个秘密",
+    "escalates": "从「复仇」到「背负」——他要背的不再是自己的仇｜第61卷把这一层的代价推到极限",
+    "start": 3001,
+    "end": 3050
+   },
+   "arc": {
+    "no": 301,
+    "name": "起·局",
+    "goal": "起段：在散仙初期境界下，把「仙位有限，得夺。夺来的仙位带」推进一层",
+    "escalates": "建立规则",
+    "start": 3001,
+    "end": 3010
+   },
+   "act": {
+    "no": 4,
+    "name": "第四幕 · 仙界无位",
+    "conflict": "仙位有限，得夺。夺来的仙位带着别人的因果。",
+    "irreversible": "白蘅消散。林昭继承了她的仙位，也继承了追杀她的所有人。",
+    "escalates": "从「复仇」到「背负」——他要背的不再是自己的仇"
+   },
+   "chapter": 3001,
+   "realm": "仙界",
+   "level": "散仙初期",
+   "level_span": "3001~3015",
+   "power": 2000000000.0,
+   "rank": 0.0,
+   "state_c1": {
+    "左眉骨": "一道三厘米的旧疤",
+    "境界": "散仙初期",
+    "右臂": "已愈，但阴雨天会疼"
+   },
+   "state_c2": {
+    "右手": "缺了半截小指"
+   },
+   "state_c3": {
+    "左耳": "耳垂上有个豁口",
+    "关系": "已死（第 2600 章）"
+   },
+   "due_foreshadow": [
+    {
+     "id": "f1",
+     "content": "沈鹤年右手缺指，他说是年轻时被机器咬的",
+     "planted": 100,
+     "window": [
+      3000,
+      3100
+     ]
+    }
+   ],
+   "overdue": [
+    {
+     "id": "f2",
+     "content": "母亲留下的铜镜背面刻着一行看不懂的字",
+     "planted": 450
+    },
+    {
+     "id": "f4",
+     "content": "断臂后梦里总有人叫他去西边",
+     "planted": 2100
+    }
+   ],
+   "inject_chars": 1968,
+   "inject_block": "【作品】《》｜\n【一句话】\n【进度】第 3001 / 5000 章（第 61/100 卷 · 第 1 弧）\n\n【力量体系 · 第 3001 章】\n当前界：仙界（炼神还虚。仙界以法则为尊，仙位有限，需夺。）\n当前境界：散仙初期（第 3001~3015 章）\n下一阶：散仙中期（第 3016 章起）\n本界境界序列：散仙 → 真仙 → 玄仙 → 金仙 → 太乙 → 大罗 → 混元 → 准圣 → 天道\n硬规则：境界共四界三十六境，每境三阶（初期/中期/后期），共一百零八阶。；境界不可跳级。可以借外力短时爆发，但事后必然反噬。；跨界飞升会受界壁压制，境界暂时跌落至新界底层，需重新攀升。；死者不可复生。任何复活情节都是设定错误。\n\n【世界状态 · 第 3001 章】\n故事内时间：仙界·散仙 · 百年后\n\n▸ 林昭\n  · 左眉骨：一道三厘米的旧疤\n  · 境界：散仙初期\n  · 右臂：已愈，但阴雨天会疼\n  · 数值：战力 26000\n  · 声音：语气=冷硬，少废话；口头禅=嗯/走；绝不说=其实/或许\n\n▸ 沈鹤年\n  · 右手：缺了半截小指\n  · 数值：战力 26000\n  · 声音：语气=慢，爱用反问；口头禅=你说呢；绝不说=综上所述\n\n▸ 苏见月\n  · 左耳：耳垂上有个豁口\n  · 关系：已死（第 2600 章）\n  · 数值：战力 26000\n  · 声音：语气=短促，带刺；口头禅=废话；绝不说=抱歉\n\n【即将到期的伏笔】\n  · 第100章埋：沈鹤年右手缺指，他说是年轻时被机器咬的（3100 章前必须回收）\n\n【⚠️ 逾期未回收 2 条：f2, f4】\n\n【世界硬规则】\n  · 境界共四界三十六境，每境三阶（初期/中期/后期），共一百零八阶。\n  · 境界不可跳级。可以借外力短时爆发，但事后必然反噬。\n  · 跨界飞升会受界壁压制，境界暂时跌落至新界底层，需重新攀升。\n  · 死者不可复生。任何复活情节都是设定错误。\n  · 神格唯一。同一神格不能同时存在两个持有者。\n\n【本卷目标】第61卷：卷目标61\n\n【本章】第3001章\n  · 事件一\n  · 事件二\n  · 事件三\n  · 本章必须停在这里：他关上了门。\n\n【上一章最后一段（原文，必须无缝接上）】\n他关上了门。门外有人在等。\n\n\n【写作契约·硬约束，违反任何一条都算失败】\n\n一、句子\n- 平均句长 12~18 字。每 200 字内至少出现 2 个 8 字以内的短句。\n- 禁止连续 3 个长句。长句之后必须跟短句。\n- 句长必须有明显起伏：最短 2 字，最长可到 50 字。\n\n二、描写\n- 只写\"摄像机拍得到、录音机录得到\"的东西：动作、器物、声音、气味、温度、光影。\n- 不写\"他感到\"\"他心想\"\"他意识到\"。\n- 抽象名词（命运、意义、救赎、灵魂、价值、本质）全篇出现不超过 3 次。\n\n三、对话\n- 对话必须口语化，允许打断、答非所问、说半句、沉默。\n- 禁止解释性台词（\"你知道的，自从那件事以后……\"这种交代信息的句子）。\n- 每个主要人物有独立的说话方式：句子长短、口头禅、避讳的词，都不同。\n\n四、结构\n- 每段结尾停在具体动作或物件上，不做总结。\n- 场景转换用硬切，不用\"与此同时\"之类的过渡。\n- 不解释因果。把因果留给读者。\n\n五、禁用词（出现任何一个即判定失败）\n仿佛、似乎、不禁、不由得、缓缓、微微、轻轻、悄然、默默、一丝、一抹、一缕、 几分、些许、隐约、恍惚、如同、宛如、犹如、恰似、瞳孔骤缩、瞳孔微缩、 嘴角勾起、嘴角微微上扬、眼底闪过、眼中闪过、不易察觉、若有所思、意味深长、 深吸一口气、缓缓开口、沉默片刻、良久、叹了口气、苦笑一声、眼神复杂、 神色复杂、心中涌起、心头一震、心中一惊、五味杂陈、百感交集、如遭雷击、 难以言喻、无法言说、不知为何、与此同时、然而、尽管如此、总而言之、 换句话说、值得一提的是、命运的齿轮、冥冥之中、这一刻、就在这一刻、 终于明白、恍然大悟、一切都不一样了、无尽的、深深的、淡淡的、莫名的、 前所未有的、难以形容的、无法抗拒的、令人窒息的、如同时间静止、 仿佛时间静止、仿佛整个世界、如同一道闪电、如同一记重锤\n\n六、禁用结构\n1. 禁止段末总结/升华。段落的最后一句必须是具体动作、具体物件、或一句对话。\n2. 禁止\"不仅…而且\"\"既…又\"\"不是…而是\"这类对仗句式。\n3. 禁止三句以上连续排比。\n4. 禁止用\"他感到/他觉得/他心中\"引出情绪，改用身体反应或动作失误。\n5. 禁止解释人物为什么这么做。读者要自己看出来。\n6. 禁止让配角说出主题句。主题只能由情节呈现。\n7. 禁止\"总结全文\"式结尾。\n8. 禁止每段长度相近。段落必须有长有短，最短可以只有一行。\n"
+  },
+  {
+   "cast_now": [
+    {
+     "id": "c1",
+     "name": "林昭",
+     "role": "主角",
+     "level": "大罗初期",
+     "level_index": 70,
+     "voice": {
+      "语气": "冷硬，少废话，情绪从不外露",
+      "句长": "短",
+      "口头禅": [
+       "嗯",
+       "走",
+       "不用"
+      ],
+      "禁用词": [
+       "其实",
+       "或许",
+       "我觉得"
+      ],
+      "自称": "我"
+     }
+    },
+    {
+     "id": "c2",
+     "name": "沈鹤年",
+     "role": "师父",
+     "level": "太乙中期",
+     "level_index": 68,
+     "voice": {
+      "语气": "慢，爱用反问，从不下判断句",
+      "句长": "长",
+      "口头禅": [
+       "你说呢",
+       "未必",
+       "急什么"
+      ],
+      "禁用词": [
+       "综上所述",
+       "必然",
+       "一定"
+      ],
+      "自称": "老夫（对外）/ 我（对林昭）"
+     }
+    },
+    {
+     "id": "c4",
+     "name": "陆无咎",
+     "role": "宿敌",
+     "level": "太乙中期",
+     "level_index": 68,
+     "voice": {
+      "语气": "拖长音，阴阳怪气，爱用敬语说狠话",
+      "句长": "中",
+      "口头禅": [
+       "有意思",
+       "请吧",
+       "恕不奉陪"
+      ],
+      "禁用词": [
+       "谢谢",
+       "感激"
+      ],
+      "自称": "在下 / 本座"
+     }
+    },
+    {
+     "id": "c5",
+     "name": "白蘅",
+     "role": "引路人",
+     "level": "太乙中期",
+     "level_index": 68,
+     "voice": {
+      "语气": "轻，几乎不表态，句子常不完整",
+      "句长": "短",
+      "口头禅": [
+       "……",
+       "也许吧"
+      ],
+      "禁用词": [
+       "我保证",
+       "一定",
+       "肯定"
+      ],
+      "自称": "我"
+     }
+    }
+   ],
+   "chapter_outline": {
+    "no": 3467,
+    "title": "茧信赋四",
+    "goal": "在大罗初期境界下，拿到一个承诺",
+    "level": "大罗初期",
+    "words": 4000,
+    "ends_with": "沈鹤年看了一眼一截麻绳，一声不响地走了，没回头。",
+    "turn": "实力发生不可逆变化",
+    "beats": [
+     {
+      "text": "沈鹤年在崖边没推开母亲的铜镜，手没抖。",
+      "kind": "冲突"
+     },
+     {
+      "text": "沈鹤年把烧焦的账本还是念出，站在雪地里。",
+      "kind": "揭示"
+     },
+     {
+      "text": "写了一半的信被陆无咎反倒交出，在祠堂。",
+      "kind": "代价"
+     },
+     {
+      "text": "沈鹤年当着所有人的面退回母亲的铜镜，在旧屋，没人说话。",
+      "kind": "转折"
+     }
+    ]
+   },
+   "volume": {
+    "no": 70,
+    "name": "第70卷 · 仙界·焚痂",
+    "goal": "仙位有限，得夺。夺来的仙位带着别人的因果。｜本卷推进到 太乙后期，但代价是多一个敌人",
+    "escalates": "从「复仇」到「背负」——他要背的不再是自己的仇｜第70卷把这一层的代价推到极限",
+    "start": 3451,
+    "end": 3500
+   },
+   "arc": {
+    "no": 347,
+    "name": "承·势",
+    "goal": "承段：在太乙后期境界下，把「仙位有限，得夺。夺来的仙位带」推进一层",
+    "escalates": "打破规则",
+    "start": 3461,
+    "end": 3470
+   },
+   "act": {
+    "no": 4,
+    "name": "第四幕 · 仙界无位",
+    "conflict": "仙位有限，得夺。夺来的仙位带着别人的因果。",
+    "irreversible": "白蘅消散。林昭继承了她的仙位，也继承了追杀她的所有人。",
+    "escalates": "从「复仇」到「背负」——他要背的不再是自己的仇"
+   },
+   "chapter": 3467,
+   "realm": "仙界",
+   "level": "大罗初期",
+   "level_span": "3467~3515",
+   "power": 72132016787.1,
+   "rank": 0.5769,
+   "state_c1": {
+    "左眉骨": "一道三厘米的旧疤",
+    "境界": "大罗初期",
+    "右臂": "已愈，但阴雨天会疼"
+   },
+   "state_c2": {
+    "右手": "缺了半截小指"
+   },
+   "state_c3": {
+    "左耳": "耳垂上有个豁口",
+    "关系": "已死（第 2600 章）"
+   },
+   "due_foreshadow": [],
+   "overdue": [
+    {
+     "id": "f1",
+     "content": "沈鹤年右手缺指，他说是年轻时被机器咬的",
+     "planted": 100
+    },
+    {
+     "id": "f2",
+     "content": "母亲留下的铜镜背面刻着一行看不懂的字",
+     "planted": 450
+    },
+    {
+     "id": "f3",
+     "content": "陆无咎说过「界壁不是墙，是筛子」",
+     "planted": 980
+    },
+    {
+     "id": "f4",
+     "content": "断臂后梦里总有人叫他去西边",
+     "planted": 2100
+    }
+   ],
+   "inject_chars": 1865,
+   "inject_block": "【作品】《》｜\n【一句话】\n【进度】第 3467 / 5000 章（第 70/100 卷 · 第 2 弧）\n\n【力量体系 · 第 3467 章】\n当前界：仙界（炼神还虚。仙界以法则为尊，仙位有限，需夺。）\n当前境界：大罗初期（第 3467~3515 章）\n下一阶：大罗中期（第 3516 章起）\n本界境界序列：散仙 → 真仙 → 玄仙 → 金仙 → 太乙 → 大罗 → 混元 → 准圣 → 天道\n硬规则：境界共四界三十六境，每境三阶（初期/中期/后期），共一百零八阶。；境界不可跳级。可以借外力短时爆发，但事后必然反噬。；跨界飞升会受界壁压制，境界暂时跌落至新界底层，需重新攀升。；死者不可复生。任何复活情节都是设定错误。\n\n【世界状态 · 第 3467 章】\n故事内时间：仙界·散仙 · 百年后\n\n▸ 林昭\n  · 左眉骨：一道三厘米的旧疤\n  · 境界：大罗初期\n  · 右臂：已愈，但阴雨天会疼\n  · 数值：战力 85768\n  · 声音：语气=冷硬，少废话；口头禅=嗯/走；绝不说=其实/或许\n\n▸ 沈鹤年\n  · 右手：缺了半截小指\n  · 数值：战力 85768\n  · 声音：语气=慢，爱用反问；口头禅=你说呢；绝不说=综上所述\n\n▸ 苏见月\n  · 左耳：耳垂上有个豁口\n  · 关系：已死（第 2600 章）\n  · 数值：战力 85768\n  · 声音：语气=短促，带刺；口头禅=废话；绝不说=抱歉\n\n【⚠️ 逾期未回收 4 条：f1, f2, f3, f4】\n\n【世界硬规则】\n  · 境界共四界三十六境，每境三阶（初期/中期/后期），共一百零八阶。\n  · 境界不可跳级。可以借外力短时爆发，但事后必然反噬。\n  · 跨界飞升会受界壁压制，境界暂时跌落至新界底层，需重新攀升。\n  · 死者不可复生。任何复活情节都是设定错误。\n  · 神格唯一。同一神格不能同时存在两个持有者。\n\n【本卷目标】第70卷：卷目标70\n\n【上一章最后一段（原文，必须无缝接上）】\n他关上了门。门外有人在等。\n\n\n【写作契约·硬约束，违反任何一条都算失败】\n\n一、句子\n- 平均句长 12~18 字。每 200 字内至少出现 2 个 8 字以内的短句。\n- 禁止连续 3 个长句。长句之后必须跟短句。\n- 句长必须有明显起伏：最短 2 字，最长可到 50 字。\n\n二、描写\n- 只写\"摄像机拍得到、录音机录得到\"的东西：动作、器物、声音、气味、温度、光影。\n- 不写\"他感到\"\"他心想\"\"他意识到\"。\n- 抽象名词（命运、意义、救赎、灵魂、价值、本质）全篇出现不超过 3 次。\n\n三、对话\n- 对话必须口语化，允许打断、答非所问、说半句、沉默。\n- 禁止解释性台词（\"你知道的，自从那件事以后……\"这种交代信息的句子）。\n- 每个主要人物有独立的说话方式：句子长短、口头禅、避讳的词，都不同。\n\n四、结构\n- 每段结尾停在具体动作或物件上，不做总结。\n- 场景转换用硬切，不用\"与此同时\"之类的过渡。\n- 不解释因果。把因果留给读者。\n\n五、禁用词（出现任何一个即判定失败）\n仿佛、似乎、不禁、不由得、缓缓、微微、轻轻、悄然、默默、一丝、一抹、一缕、 几分、些许、隐约、恍惚、如同、宛如、犹如、恰似、瞳孔骤缩、瞳孔微缩、 嘴角勾起、嘴角微微上扬、眼底闪过、眼中闪过、不易察觉、若有所思、意味深长、 深吸一口气、缓缓开口、沉默片刻、良久、叹了口气、苦笑一声、眼神复杂、 神色复杂、心中涌起、心头一震、心中一惊、五味杂陈、百感交集、如遭雷击、 难以言喻、无法言说、不知为何、与此同时、然而、尽管如此、总而言之、 换句话说、值得一提的是、命运的齿轮、冥冥之中、这一刻、就在这一刻、 终于明白、恍然大悟、一切都不一样了、无尽的、深深的、淡淡的、莫名的、 前所未有的、难以形容的、无法抗拒的、令人窒息的、如同时间静止、 仿佛时间静止、仿佛整个世界、如同一道闪电、如同一记重锤\n\n六、禁用结构\n1. 禁止段末总结/升华。段落的最后一句必须是具体动作、具体物件、或一句对话。\n2. 禁止\"不仅…而且\"\"既…又\"\"不是…而是\"这类对仗句式。\n3. 禁止三句以上连续排比。\n4. 禁止用\"他感到/他觉得/他心中\"引出情绪，改用身体反应或动作失误。\n5. 禁止解释人物为什么这么做。读者要自己看出来。\n6. 禁止让配角说出主题句。主题只能由情节呈现。\n7. 禁止\"总结全文\"式结尾。\n8. 禁止每段长度相近。段落必须有长有短，最短可以只有一行。\n"
+  },
+  {
+   "cast_now": [
+    {
+     "id": "c4",
+     "name": "陆无咎",
+     "role": "宿敌",
+     "level": "神皇中期",
+     "level_index": 98,
+     "voice": {
+      "语气": "拖长音，阴阳怪气，爱用敬语说狠话",
+      "句长": "中",
+      "口头禅": [
+       "有意思",
+       "请吧",
+       "恕不奉陪"
+      ],
+      "禁用词": [
+       "谢谢",
+       "感激"
+      ],
+      "自称": "在下 / 本座"
+     }
+    },
+    {
+     "id": "c2",
+     "name": "沈鹤年",
+     "role": "师父",
+     "level": "神将中期",
+     "level_index": 89,
+     "voice": {
+      "语气": "慢，爱用反问，从不下判断句",
+      "句长": "长",
+      "口头禅": [
+       "你说呢",
+       "未必",
+       "急什么"
+      ],
+      "禁用词": [
+       "综上所述",
+       "必然",
+       "一定"
+      ],
+      "自称": "老夫（对外）/ 我（对林昭）"
+     }
+    },
+    {
+     "id": "c6",
+     "name": "天枢",
+     "role": "最终反派",
+     "level": "神将中期",
+     "level_index": 89,
+     "voice": {
+      "语气": "无起伏，像念判词，从不用第二人称",
+      "句长": "中",
+      "口头禅": [
+       "依律",
+       "此非汝所能问"
+      ],
+      "禁用词": [
+       "也许",
+       "或许",
+       "我想"
+      ],
+      "自称": "吾"
+     }
+    },
+    {
+     "id": "c1",
+     "name": "林昭",
+     "role": "主角",
+     "level": "神人初期",
+     "level_index": 82,
+     "voice": {
+      "语气": "冷硬，少废话，情绪从不外露",
+      "句长": "短",
+      "口头禅": [
+       "嗯",
+       "走",
+       "不用"
+      ],
+      "禁用词": [
+       "其实",
+       "或许",
+       "我觉得"
+      ],
+      "自称": "我"
+     }
+    }
+   ],
+   "chapter_outline": {
+    "no": 4201,
+    "title": "钉信录上",
+    "goal": "在神人初期境界下，拿到一个承诺",
+    "level": "神人初期",
+    "words": 4000,
+    "ends_with": "一截麻绳硌着手，林昭一声不响地没松，旧屋很静。",
+    "turn": "实力发生不可逆变化",
+    "beats": [
+     {
+      "text": "天枢把带血的布先拆开，站在渡口。",
+      "kind": "冲突"
+     },
+     {
+      "text": "在旧屋，沈鹤年把一块碎瓦还是撕开，转身就走。",
+      "kind": "揭示"
+     },
+     {
+      "text": "一把锈刀被陆无咎终究交出，在崖边。",
+      "kind": "代价"
+     },
+     {
+      "text": "沈鹤年终究退回断了的指骨，在灯下，没人说话。",
+      "kind": "转折"
+     }
+    ]
+   },
+   "volume": {
+    "no": 85,
+    "name": "第85卷 · 神界·锁河",
+    "goal": "师父沈鹤年是叛神。他一直在等林昭来杀他。｜本卷推进到 神人初期，但代价是暴露一个秘密",
+    "escalates": "从「背负」到「背叛」——他开始怀疑自己站的那一边｜第85卷把这一层的代价推到极限",
+    "start": 4201,
+    "end": 4250
+   },
+   "arc": {
+    "no": 421,
+    "name": "起·局",
+    "goal": "起段：在神人初期境界下，把「师父沈鹤年是叛神。他一直在等」推进一层",
+    "escalates": "建立规则",
+    "start": 4201,
+    "end": 4210
+   },
+   "act": {
+    "no": 5,
+    "name": "第五幕 · 神界叛徒",
+    "conflict": "师父沈鹤年是叛神。他一直在等林昭来杀他。",
+    "irreversible": "林昭亲手杀了沈鹤年。他成了自己最恨的那种人。",
+    "escalates": "从「背负」到「背叛」——他开始怀疑自己站的那一边"
+   },
+   "chapter": 4201,
+   "realm": "神界",
+   "level": "神人初期",
+   "level_span": "4201~4210",
+   "power": 2000000000000.0,
+   "rank": 0.0,
+   "state_c1": {
+    "左眉骨": "一道三厘米的旧疤",
+    "境界": "神人初期",
+    "右臂": "已愈，但阴雨天会疼",
+    "所在": "神界·中枢"
+   },
+   "state_c2": {
+    "右手": "缺了半截小指",
+    "身份": "神界·叛神"
+   },
+   "state_c3": {
+    "左耳": "耳垂上有个豁口",
+    "关系": "已死（第 2600 章）"
+   },
+   "due_foreshadow": [],
+   "overdue": [
+    {
+     "id": "f1",
+     "content": "沈鹤年右手缺指，他说是年轻时被机器咬的",
+     "planted": 100
+    },
+    {
+     "id": "f2",
+     "content": "母亲留下的铜镜背面刻着一行看不懂的字",
+     "planted": 450
+    },
+    {
+     "id": "f3",
+     "content": "陆无咎说过「界壁不是墙，是筛子」",
+     "planted": 980
+    },
+    {
+     "id": "f4",
+     "content": "断臂后梦里总有人叫他去西边",
+     "planted": 2100
+    }
+   ],
+   "inject_chars": 1951,
+   "inject_block": "【作品】《》｜\n【一句话】\n【进度】第 4201 / 5000 章（第 85/100 卷 · 第 1 弧）\n\n【力量体系 · 第 4201 章】\n当前界：神界（炼虚合道。神界以神格为基，神格唯一，不可复制。）\n当前境界：神人初期（第 4201~4210 章）\n下一阶：神人中期（第 4211 章起）\n本界境界序列：神人 → 神使 → 神将 → 神君 → 神王 → 神皇 → 神帝 → 神尊 → 神主\n硬规则：境界共四界三十六境，每境三阶（初期/中期/后期），共一百零八阶。；境界不可跳级。可以借外力短时爆发，但事后必然反噬。；跨界飞升会受界壁压制，境界暂时跌落至新界底层，需重新攀升。；死者不可复生。任何复活情节都是设定错误。\n\n【世界状态 · 第 4201 章】\n故事内时间：神界·神人 · 劫后\n\n▸ 林昭\n  · 左眉骨：一道三厘米的旧疤\n  · 境界：神人初期\n  · 右臂：已愈，但阴雨天会疼\n  · 所在：神界·中枢\n  · 数值：战力 100000\n  · 声音：语气=冷硬，少废话；口头禅=嗯/走；绝不说=其实/或许\n\n▸ 沈鹤年\n  · 右手：缺了半截小指\n  · 身份：神界·叛神\n  · 数值：战力 100000\n  · 声音：语气=慢，爱用反问；口头禅=你说呢；绝不说=综上所述\n\n▸ 苏见月\n  · 左耳：耳垂上有个豁口\n  · 关系：已死（第 2600 章）\n  · 数值：战力 100000\n  · 声音：语气=短促，带刺；口头禅=废话；绝不说=抱歉\n\n【⚠️ 逾期未回收 4 条：f1, f2, f3, f4】\n\n【世界硬规则】\n  · 境界共四界三十六境，每境三阶（初期/中期/后期），共一百零八阶。\n  · 境界不可跳级。可以借外力短时爆发，但事后必然反噬。\n  · 跨界飞升会受界壁压制，境界暂时跌落至新界底层，需重新攀升。\n  · 死者不可复生。任何复活情节都是设定错误。\n  · 神格唯一。同一神格不能同时存在两个持有者。\n\n【本卷目标】第85卷：卷目标85\n\n【本章】第4201章\n  · 事件一\n  · 事件二\n  · 事件三\n  · 本章必须停在这里：他关上了门。\n\n【上一章最后一段（原文，必须无缝接上）】\n他关上了门。门外有人在等。\n\n\n【写作契约·硬约束，违反任何一条都算失败】\n\n一、句子\n- 平均句长 12~18 字。每 200 字内至少出现 2 个 8 字以内的短句。\n- 禁止连续 3 个长句。长句之后必须跟短句。\n- 句长必须有明显起伏：最短 2 字，最长可到 50 字。\n\n二、描写\n- 只写\"摄像机拍得到、录音机录得到\"的东西：动作、器物、声音、气味、温度、光影。\n- 不写\"他感到\"\"他心想\"\"他意识到\"。\n- 抽象名词（命运、意义、救赎、灵魂、价值、本质）全篇出现不超过 3 次。\n\n三、对话\n- 对话必须口语化，允许打断、答非所问、说半句、沉默。\n- 禁止解释性台词（\"你知道的，自从那件事以后……\"这种交代信息的句子）。\n- 每个主要人物有独立的说话方式：句子长短、口头禅、避讳的词，都不同。\n\n四、结构\n- 每段结尾停在具体动作或物件上，不做总结。\n- 场景转换用硬切，不用\"与此同时\"之类的过渡。\n- 不解释因果。把因果留给读者。\n\n五、禁用词（出现任何一个即判定失败）\n仿佛、似乎、不禁、不由得、缓缓、微微、轻轻、悄然、默默、一丝、一抹、一缕、 几分、些许、隐约、恍惚、如同、宛如、犹如、恰似、瞳孔骤缩、瞳孔微缩、 嘴角勾起、嘴角微微上扬、眼底闪过、眼中闪过、不易察觉、若有所思、意味深长、 深吸一口气、缓缓开口、沉默片刻、良久、叹了口气、苦笑一声、眼神复杂、 神色复杂、心中涌起、心头一震、心中一惊、五味杂陈、百感交集、如遭雷击、 难以言喻、无法言说、不知为何、与此同时、然而、尽管如此、总而言之、 换句话说、值得一提的是、命运的齿轮、冥冥之中、这一刻、就在这一刻、 终于明白、恍然大悟、一切都不一样了、无尽的、深深的、淡淡的、莫名的、 前所未有的、难以形容的、无法抗拒的、令人窒息的、如同时间静止、 仿佛时间静止、仿佛整个世界、如同一道闪电、如同一记重锤\n\n六、禁用结构\n1. 禁止段末总结/升华。段落的最后一句必须是具体动作、具体物件、或一句对话。\n2. 禁止\"不仅…而且\"\"既…又\"\"不是…而是\"这类对仗句式。\n3. 禁止三句以上连续排比。\n4. 禁止用\"他感到/他觉得/他心中\"引出情绪，改用身体反应或动作失误。\n5. 禁止解释人物为什么这么做。读者要自己看出来。\n6. 禁止让配角说出主题句。主题只能由情节呈现。\n7. 禁止\"总结全文\"式结尾。\n8. 禁止每段长度相近。段落必须有长有短，最短可以只有一行。\n"
+  },
+  {
+   "cast_now": [
+    {
+     "id": "c4",
+     "name": "陆无咎",
+     "role": "宿敌",
+     "level": "神皇中期",
+     "level_index": 98,
+     "voice": {
+      "语气": "拖长音，阴阳怪气，爱用敬语说狠话",
+      "句长": "中",
+      "口头禅": [
+       "有意思",
+       "请吧",
+       "恕不奉陪"
+      ],
+      "禁用词": [
+       "谢谢",
+       "感激"
+      ],
+      "自称": "在下 / 本座"
+     }
+    },
+    {
+     "id": "c1",
+     "name": "林昭",
+     "role": "主角",
+     "level": "神王后期",
+     "level_index": 96,
+     "voice": {
+      "语气": "冷硬，少废话，情绪从不外露",
+      "句长": "短",
+      "口头禅": [
+       "嗯",
+       "走",
+       "不用"
+      ],
+      "禁用词": [
+       "其实",
+       "或许",
+       "我觉得"
+      ],
+      "自称": "我"
+     }
+    },
+    {
+     "id": "c2",
+     "name": "沈鹤年",
+     "role": "师父",
+     "level": "神将中期",
+     "level_index": 89,
+     "voice": {
+      "语气": "慢，爱用反问，从不下判断句",
+      "句长": "长",
+      "口头禅": [
+       "你说呢",
+       "未必",
+       "急什么"
+      ],
+      "禁用词": [
+       "综上所述",
+       "必然",
+       "一定"
+      ],
+      "自称": "老夫（对外）/ 我（对林昭）"
+     }
+    },
+    {
+     "id": "c6",
+     "name": "天枢",
+     "role": "最终反派",
+     "level": "神将中期",
+     "level_index": 89,
+     "voice": {
+      "语气": "无起伏，像念判词，从不用第二人称",
+      "句长": "中",
+      "口头禅": [
+       "依律",
+       "此非汝所能问"
+      ],
+      "禁用词": [
+       "也许",
+       "或许",
+       "我想"
+      ],
+      "自称": "吾"
+     }
+    }
+   ],
+   "chapter_outline": {
+    "no": 4500,
+    "title": "岸函檄四",
+    "goal": "在神王后期境界下，拿到一个承诺",
+    "level": "神王后期",
+    "words": 4000,
+    "ends_with": "渡口的路终究还长，陆无咎把写了一半的信揣好。",
+    "turn": "关系发生不可逆变化",
+    "beats": [
+     {
+      "text": "一截麻绳被陆无咎才拆开，在祠堂。",
+      "kind": "冲突"
+     },
+     {
+      "text": "陆无咎在祠堂没点破写了一半的信，手没抖。",
+      "kind": "揭示"
+     },
+     {
+      "text": "在祠堂，断了的指骨反倒被沈鹤年砸烂，没人敢看。",
+      "kind": "代价"
+     },
+     {
+      "text": "林昭在渡口反倒退回写了一半的信，手没抖。",
+      "kind": "转折"
+     }
+    ]
+   },
+   "volume": {
+    "no": 90,
+    "name": "第90卷 · 神界·茧骨",
+    "goal": "师父沈鹤年是叛神。他一直在等林昭来杀他。｜本卷推进到 神王中期，但代价是失去一个盟友",
+    "escalates": "从「背负」到「背叛」——他开始怀疑自己站的那一边｜第90卷把这一层的代价推到极限",
+    "start": 4451,
+    "end": 4500
+   },
+   "arc": {
+    "no": 450,
+    "name": "余·波",
+    "goal": "合段：在神王后期境界下，把「师父沈鹤年是叛神。他一直在等」推进一层",
+    "escalates": "余震",
+    "start": 4491,
+    "end": 4500
+   },
+   "act": {
+    "no": 5,
+    "name": "第五幕 · 神界叛徒",
+    "conflict": "师父沈鹤年是叛神。他一直在等林昭来杀他。",
+    "irreversible": "林昭亲手杀了沈鹤年。他成了自己最恨的那种人。",
+    "escalates": "从「背负」到「背叛」——他开始怀疑自己站的那一边"
+   },
+   "chapter": 4500,
+   "realm": "神界",
+   "level": "神王后期",
+   "level_span": "4481~4511",
+   "power": 56796495119004.0,
+   "rank": 0.5385,
+   "state_c1": {
+    "左眉骨": "一道三厘米的旧疤",
+    "右臂": "已愈，但阴雨天会疼",
+    "所在": "神界·中枢"
+   },
+   "state_c2": {
+    "右手": "缺了半截小指",
+    "身份": "神界·叛神"
+   },
+   "state_c3": {
+    "左耳": "耳垂上有个豁口",
+    "关系": "已死（第 2600 章）"
+   },
+   "due_foreshadow": [],
+   "overdue": [
+    {
+     "id": "f1",
+     "content": "沈鹤年右手缺指，他说是年轻时被机器咬的",
+     "planted": 100
+    },
+    {
+     "id": "f2",
+     "content": "母亲留下的铜镜背面刻着一行看不懂的字",
+     "planted": 450
+    },
+    {
+     "id": "f3",
+     "content": "陆无咎说过「界壁不是墙，是筛子」",
+     "planted": 980
+    },
+    {
+     "id": "f4",
+     "content": "断臂后梦里总有人叫他去西边",
+     "planted": 2100
+    }
+   ],
+   "inject_chars": 1883,
+   "inject_block": "【作品】《》｜\n【一句话】\n【进度】第 4500 / 5000 章（第 90/100 卷 · 第 5 弧）\n\n【力量体系 · 第 4500 章】\n当前界：神界（炼虚合道。神界以神格为基，神格唯一，不可复制。）\n当前境界：神王后期（第 4481~4511 章）\n下一阶：神皇初期（第 4512 章起）\n本界境界序列：神人 → 神使 → 神将 → 神君 → 神王 → 神皇 → 神帝 → 神尊 → 神主\n硬规则：境界共四界三十六境，每境三阶（初期/中期/后期），共一百零八阶。；境界不可跳级。可以借外力短时爆发，但事后必然反噬。；跨界飞升会受界壁压制，境界暂时跌落至新界底层，需重新攀升。；死者不可复生。任何复活情节都是设定错误。\n\n【世界状态 · 第 4500 章】\n故事内时间：神界·神人 · 劫后\n\n▸ 林昭\n  · 左眉骨：一道三厘米的旧疤\n  · 右臂：已愈，但阴雨天会疼\n  · 所在：神界·中枢\n  · 数值：战力 400000\n  · 声音：语气=冷硬，少废话；口头禅=嗯/走；绝不说=其实/或许\n\n▸ 沈鹤年\n  · 右手：缺了半截小指\n  · 身份：神界·叛神\n  · 数值：战力 400000\n  · 声音：语气=慢，爱用反问；口头禅=你说呢；绝不说=综上所述\n\n▸ 苏见月\n  · 左耳：耳垂上有个豁口\n  · 关系：已死（第 2600 章）\n  · 数值：战力 400000\n  · 声音：语气=短促，带刺；口头禅=废话；绝不说=抱歉\n\n【⚠️ 逾期未回收 4 条：f1, f2, f3, f4】\n\n【世界硬规则】\n  · 境界共四界三十六境，每境三阶（初期/中期/后期），共一百零八阶。\n  · 境界不可跳级。可以借外力短时爆发，但事后必然反噬。\n  · 跨界飞升会受界壁压制，境界暂时跌落至新界底层，需重新攀升。\n  · 死者不可复生。任何复活情节都是设定错误。\n  · 神格唯一。同一神格不能同时存在两个持有者。\n\n【本卷目标】第90卷：卷目标90\n\n【上一章最后一段（原文，必须无缝接上）】\n他关上了门。门外有人在等。\n\n\n【写作契约·硬约束，违反任何一条都算失败】\n\n一、句子\n- 平均句长 12~18 字。每 200 字内至少出现 2 个 8 字以内的短句。\n- 禁止连续 3 个长句。长句之后必须跟短句。\n- 句长必须有明显起伏：最短 2 字，最长可到 50 字。\n\n二、描写\n- 只写\"摄像机拍得到、录音机录得到\"的东西：动作、器物、声音、气味、温度、光影。\n- 不写\"他感到\"\"他心想\"\"他意识到\"。\n- 抽象名词（命运、意义、救赎、灵魂、价值、本质）全篇出现不超过 3 次。\n\n三、对话\n- 对话必须口语化，允许打断、答非所问、说半句、沉默。\n- 禁止解释性台词（\"你知道的，自从那件事以后……\"这种交代信息的句子）。\n- 每个主要人物有独立的说话方式：句子长短、口头禅、避讳的词，都不同。\n\n四、结构\n- 每段结尾停在具体动作或物件上，不做总结。\n- 场景转换用硬切，不用\"与此同时\"之类的过渡。\n- 不解释因果。把因果留给读者。\n\n五、禁用词（出现任何一个即判定失败）\n仿佛、似乎、不禁、不由得、缓缓、微微、轻轻、悄然、默默、一丝、一抹、一缕、 几分、些许、隐约、恍惚、如同、宛如、犹如、恰似、瞳孔骤缩、瞳孔微缩、 嘴角勾起、嘴角微微上扬、眼底闪过、眼中闪过、不易察觉、若有所思、意味深长、 深吸一口气、缓缓开口、沉默片刻、良久、叹了口气、苦笑一声、眼神复杂、 神色复杂、心中涌起、心头一震、心中一惊、五味杂陈、百感交集、如遭雷击、 难以言喻、无法言说、不知为何、与此同时、然而、尽管如此、总而言之、 换句话说、值得一提的是、命运的齿轮、冥冥之中、这一刻、就在这一刻、 终于明白、恍然大悟、一切都不一样了、无尽的、深深的、淡淡的、莫名的、 前所未有的、难以形容的、无法抗拒的、令人窒息的、如同时间静止、 仿佛时间静止、仿佛整个世界、如同一道闪电、如同一记重锤\n\n六、禁用结构\n1. 禁止段末总结/升华。段落的最后一句必须是具体动作、具体物件、或一句对话。\n2. 禁止\"不仅…而且\"\"既…又\"\"不是…而是\"这类对仗句式。\n3. 禁止三句以上连续排比。\n4. 禁止用\"他感到/他觉得/他心中\"引出情绪，改用身体反应或动作失误。\n5. 禁止解释人物为什么这么做。读者要自己看出来。\n6. 禁止让配角说出主题句。主题只能由情节呈现。\n7. 禁止\"总结全文\"式结尾。\n8. 禁止每段长度相近。段落必须有长有短，最短可以只有一行。\n"
+  },
+  {
+   "cast_now": [
+    {
+     "id": "c1",
+     "name": "林昭",
+     "role": "主角",
+     "level": "神主后期",
+     "level_index": 108,
+     "voice": {
+      "语气": "冷硬，少废话，情绪从不外露",
+      "句长": "短",
+      "口头禅": [
+       "嗯",
+       "走",
+       "不用"
+      ],
+      "禁用词": [
+       "其实",
+       "或许",
+       "我觉得"
+      ],
+      "自称": "我"
+     }
+    },
+    {
+     "id": "c4",
+     "name": "陆无咎",
+     "role": "宿敌",
+     "level": "神尊后期",
+     "level_index": 105,
+     "voice": {
+      "语气": "拖长音，阴阳怪气，爱用敬语说狠话",
+      "句长": "中",
+      "口头禅": [
+       "有意思",
+       "请吧",
+       "恕不奉陪"
+      ],
+      "禁用词": [
+       "谢谢",
+       "感激"
+      ],
+      "自称": "在下 / 本座"
+     }
+    },
+    {
+     "id": "c6",
+     "name": "天枢",
+     "role": "最终反派",
+     "level": "神尊中期",
+     "level_index": 104,
+     "voice": {
+      "语气": "无起伏，像念判词，从不用第二人称",
+      "句长": "中",
+      "口头禅": [
+       "依律",
+       "此非汝所能问"
+      ],
+      "禁用词": [
+       "也许",
+       "或许",
+       "我想"
+      ],
+      "自称": "吾"
+     }
+    },
+    {
+     "id": "c2",
+     "name": "沈鹤年",
+     "role": "师父",
+     "level": "神皇后期",
+     "level_index": 99,
+     "voice": {
+      "语气": "慢，爱用反问，从不下判断句",
+      "句长": "长",
+      "口头禅": [
+       "你说呢",
+       "未必",
+       "急什么"
+      ],
+      "禁用词": [
+       "综上所述",
+       "必然",
+       "一定"
+      ],
+      "自称": "老夫（对外）/ 我（对林昭）"
+     }
+    }
+   ],
+   "chapter_outline": {
+    "no": 4953,
+    "title": "碑河传重",
+    "goal": "在神主后期境界下，找到一条退路",
+    "level": "神主后期",
+    "words": 4000,
+    "ends_with": "林昭抹了把脸，当着所有人的面把一块碎瓦塞进旧屋的缝里。",
+    "turn": "立场发生不可逆变化",
+    "beats": [
+     {
+      "text": "烧焦的账本在雪地里又被天枢摔碎，一声没吭。",
+      "kind": "冲突"
+     },
+     {
+      "text": "林昭还是把一把锈刀认出，在灯下，谁都没拦。",
+      "kind": "揭示"
+     },
+     {
+      "text": "在雪地里，陆无咎再割下断了的指骨。",
+      "kind": "代价"
+     },
+     {
+      "text": "陆无咎又钉死烧焦的账本的时候，旧屋只有风。",
+      "kind": "转折"
+     }
+    ]
+   },
+   "volume": {
+    "no": 100,
+    "name": "第100卷 · 神界·茧窗",
+    "goal": "神格唯一。要成神主，必须杀掉前任——而前任是法则本身。｜本卷推进到 神主中期，但代价是多一个敌人",
+    "escalates": "从「成为法则」到「废掉法则」——他放弃了唯一的答案｜第100卷把这一层的代价推到极限",
+    "start": 4951,
+    "end": 5000
+   },
+   "arc": {
+    "no": 496,
+    "name": "起·局",
+    "goal": "起段：在神主中期境界下，把「神格唯一。要成神主，必须杀掉」推进一层",
+    "escalates": "建立规则",
+    "start": 4951,
+    "end": 4960
+   },
+   "act": {
+    "no": 6,
+    "name": "第六幕 · 神主",
+    "conflict": "神格唯一。要成神主，必须杀掉前任——而前任是法则本身。",
+    "irreversible": "林昭成为神主，然后废掉神格。四界重归凡人可及。",
+    "escalates": "从「成为法则」到「废掉法则」——他放弃了唯一的答案"
+   },
+   "chapter": 4953,
+   "realm": "神界",
+   "level": "神主后期",
+   "level_span": "4953~5000",
+   "power": 1000000000000000.0,
+   "rank": 1.0,
+   "state_c1": {
+    "左眉骨": "一道三厘米的旧疤",
+    "境界": "神主后期",
+    "右臂": "已愈，但阴雨天会疼",
+    "所在": "神界·中枢"
+   },
+   "state_c2": {
+    "右手": "缺了半截小指",
+    "身份": "神界·叛神"
+   },
+   "state_c3": {
+    "左耳": "耳垂上有个豁口",
+    "关系": "已死（第 2600 章）"
+   },
+   "due_foreshadow": [
+    {
+     "id": "f5",
+     "content": "天枢称林昭为「第二位」",
+     "planted": 4200,
+     "window": [
+      4900,
+      4990
+     ]
+    }
+   ],
+   "overdue": [
+    {
+     "id": "f1",
+     "content": "沈鹤年右手缺指，他说是年轻时被机器咬的",
+     "planted": 100
+    },
+    {
+     "id": "f2",
+     "content": "母亲留下的铜镜背面刻着一行看不懂的字",
+     "planted": 450
+    },
+    {
+     "id": "f3",
+     "content": "陆无咎说过「界壁不是墙，是筛子」",
+     "planted": 980
+    },
+    {
+     "id": "f4",
+     "content": "断臂后梦里总有人叫他去西边",
+     "planted": 2100
+    }
+   ],
+   "inject_chars": 1938,
+   "inject_block": "【作品】《》｜\n【一句话】\n【进度】第 4953 / 5000 章（第 100/100 卷 · 第 1 弧）\n\n【力量体系 · 第 4953 章】\n当前界：神界（炼虚合道。神界以神格为基，神格唯一，不可复制。）\n当前境界：神主后期（第 4953~5000 章）\n下一阶：无（已至终点）\n本界境界序列：神人 → 神使 → 神将 → 神君 → 神王 → 神皇 → 神帝 → 神尊 → 神主\n硬规则：境界共四界三十六境，每境三阶（初期/中期/后期），共一百零八阶。；境界不可跳级。可以借外力短时爆发，但事后必然反噬。；跨界飞升会受界壁压制，境界暂时跌落至新界底层，需重新攀升。；死者不可复生。任何复活情节都是设定错误。\n\n【世界状态 · 第 4953 章】\n故事内时间：神界·终局 · 神主\n\n▸ 林昭\n  · 左眉骨：一道三厘米的旧疤\n  · 境界：神主后期\n  · 右臂：已愈，但阴雨天会疼\n  · 所在：神界·中枢\n  · 数值：战力 943600\n  · 声音：语气=冷硬，少废话；口头禅=嗯/走；绝不说=其实/或许\n\n▸ 沈鹤年\n  · 右手：缺了半截小指\n  · 身份：神界·叛神\n  · 数值：战力 943600\n  · 声音：语气=慢，爱用反问；口头禅=你说呢；绝不说=综上所述\n\n▸ 苏见月\n  · 左耳：耳垂上有个豁口\n  · 关系：已死（第 2600 章）\n  · 数值：战力 943600\n  · 声音：语气=短促，带刺；口头禅=废话；绝不说=抱歉\n\n【即将到期的伏笔】\n  · 第4200章埋：天枢称林昭为「第二位」（4990 章前必须回收）\n\n【⚠️ 逾期未回收 4 条：f1, f2, f3, f4】\n\n【世界硬规则】\n  · 境界共四界三十六境，每境三阶（初期/中期/后期），共一百零八阶。\n  · 境界不可跳级。可以借外力短时爆发，但事后必然反噬。\n  · 跨界飞升会受界壁压制，境界暂时跌落至新界底层，需重新攀升。\n  · 死者不可复生。任何复活情节都是设定错误。\n  · 神格唯一。同一神格不能同时存在两个持有者。\n\n【本卷目标】第100卷：卷目标100\n\n【上一章最后一段（原文，必须无缝接上）】\n他关上了门。门外有人在等。\n\n\n【写作契约·硬约束，违反任何一条都算失败】\n\n一、句子\n- 平均句长 12~18 字。每 200 字内至少出现 2 个 8 字以内的短句。\n- 禁止连续 3 个长句。长句之后必须跟短句。\n- 句长必须有明显起伏：最短 2 字，最长可到 50 字。\n\n二、描写\n- 只写\"摄像机拍得到、录音机录得到\"的东西：动作、器物、声音、气味、温度、光影。\n- 不写\"他感到\"\"他心想\"\"他意识到\"。\n- 抽象名词（命运、意义、救赎、灵魂、价值、本质）全篇出现不超过 3 次。\n\n三、对话\n- 对话必须口语化，允许打断、答非所问、说半句、沉默。\n- 禁止解释性台词（\"你知道的，自从那件事以后……\"这种交代信息的句子）。\n- 每个主要人物有独立的说话方式：句子长短、口头禅、避讳的词，都不同。\n\n四、结构\n- 每段结尾停在具体动作或物件上，不做总结。\n- 场景转换用硬切，不用\"与此同时\"之类的过渡。\n- 不解释因果。把因果留给读者。\n\n五、禁用词（出现任何一个即判定失败）\n仿佛、似乎、不禁、不由得、缓缓、微微、轻轻、悄然、默默、一丝、一抹、一缕、 几分、些许、隐约、恍惚、如同、宛如、犹如、恰似、瞳孔骤缩、瞳孔微缩、 嘴角勾起、嘴角微微上扬、眼底闪过、眼中闪过、不易察觉、若有所思、意味深长、 深吸一口气、缓缓开口、沉默片刻、良久、叹了口气、苦笑一声、眼神复杂、 神色复杂、心中涌起、心头一震、心中一惊、五味杂陈、百感交集、如遭雷击、 难以言喻、无法言说、不知为何、与此同时、然而、尽管如此、总而言之、 换句话说、值得一提的是、命运的齿轮、冥冥之中、这一刻、就在这一刻、 终于明白、恍然大悟、一切都不一样了、无尽的、深深的、淡淡的、莫名的、 前所未有的、难以形容的、无法抗拒的、令人窒息的、如同时间静止、 仿佛时间静止、仿佛整个世界、如同一道闪电、如同一记重锤\n\n六、禁用结构\n1. 禁止段末总结/升华。段落的最后一句必须是具体动作、具体物件、或一句对话。\n2. 禁止\"不仅…而且\"\"既…又\"\"不是…而是\"这类对仗句式。\n3. 禁止三句以上连续排比。\n4. 禁止用\"他感到/他觉得/他心中\"引出情绪，改用身体反应或动作失误。\n5. 禁止解释人物为什么这么做。读者要自己看出来。\n6. 禁止让配角说出主题句。主题只能由情节呈现。\n7. 禁止\"总结全文\"式结尾。\n8. 禁止每段长度相近。段落必须有长有短，最短可以只有一行。\n"
+  },
+  {
+   "cast_now": [
+    {
+     "id": "c1",
+     "name": "林昭",
+     "role": "主角",
+     "level": "神主后期",
+     "level_index": 108,
+     "voice": {
+      "语气": "冷硬，少废话，情绪从不外露",
+      "句长": "短",
+      "口头禅": [
+       "嗯",
+       "走",
+       "不用"
+      ],
+      "禁用词": [
+       "其实",
+       "或许",
+       "我觉得"
+      ],
+      "自称": "我"
+     }
+    },
+    {
+     "id": "c2",
+     "name": "沈鹤年",
+     "role": "师父",
+     "level": "神尊后期",
+     "level_index": 105,
+     "voice": {
+      "语气": "慢，爱用反问，从不下判断句",
+      "句长": "长",
+      "口头禅": [
+       "你说呢",
+       "未必",
+       "急什么"
+      ],
+      "禁用词": [
+       "综上所述",
+       "必然",
+       "一定"
+      ],
+      "自称": "老夫（对外）/ 我（对林昭）"
+     }
+    },
+    {
+     "id": "c4",
+     "name": "陆无咎",
+     "role": "宿敌",
+     "level": "神尊后期",
+     "level_index": 105,
+     "voice": {
+      "语气": "拖长音，阴阳怪气，爱用敬语说狠话",
+      "句长": "中",
+      "口头禅": [
+       "有意思",
+       "请吧",
+       "恕不奉陪"
+      ],
+      "禁用词": [
+       "谢谢",
+       "感激"
+      ],
+      "自称": "在下 / 本座"
+     }
+    },
+    {
+     "id": "c6",
+     "name": "天枢",
+     "role": "最终反派",
+     "level": "神尊后期",
+     "level_index": 105,
+     "voice": {
+      "语气": "无起伏，像念判词，从不用第二人称",
+      "句长": "中",
+      "口头禅": [
+       "依律",
+       "此非汝所能问"
+      ],
+      "禁用词": [
+       "也许",
+       "或许",
+       "我想"
+      ],
+      "自称": "吾"
+     }
+    }
+   ],
+   "chapter_outline": {
+    "no": 4999,
+    "title": "茧锤诰二",
+    "goal": "在神主后期境界下，还清一笔债",
+    "level": "神主后期",
+    "words": 4000,
+    "ends_with": "林昭看了一眼烧焦的账本，先走了，没回头。",
+    "turn": "关系发生不可逆变化",
+    "beats": [
+     {
+      "text": "在旧屋，林昭把一截麻绳还是推开，转身就走。",
+      "kind": "冲突"
+     },
+     {
+      "text": "陆无咎先把写了一半的信点破，在祠堂，谁都没拦。",
+      "kind": "揭示"
+     },
+     {
+      "text": "沈鹤年先押上一块碎瓦，在灯下，没人说话。",
+      "kind": "代价"
+     },
+     {
+      "text": "在灯下，林昭把一块碎瓦才钉死，转身就走。",
+      "kind": "转折"
+     }
+    ]
+   },
+   "volume": {
+    "no": 100,
+    "name": "第100卷 · 神界·茧窗",
+    "goal": "神格唯一。要成神主，必须杀掉前任——而前任是法则本身。｜本卷推进到 神主中期，但代价是多一个敌人",
+    "escalates": "从「成为法则」到「废掉法则」——他放弃了唯一的答案｜第100卷把这一层的代价推到极限",
+    "start": 4951,
+    "end": 5000
+   },
+   "arc": {
+    "no": 500,
+    "name": "余·波",
+    "goal": "合段：在神主后期境界下，把「神格唯一。要成神主，必须杀掉」推进一层",
+    "escalates": "余震",
+    "start": 4991,
+    "end": 5000
+   },
+   "act": {
+    "no": 6,
+    "name": "第六幕 · 神主",
+    "conflict": "神格唯一。要成神主，必须杀掉前任——而前任是法则本身。",
+    "irreversible": "林昭成为神主，然后废掉神格。四界重归凡人可及。",
+    "escalates": "从「成为法则」到「废掉法则」——他放弃了唯一的答案"
+   },
+   "chapter": 4999,
+   "realm": "神界",
+   "level": "神主后期",
+   "level_span": "4953~5000",
+   "power": 1000000000000000.0,
+   "rank": 1.0,
+   "state_c1": {
+    "左眉骨": "一道三厘米的旧疤",
+    "境界": "神主后期",
+    "右臂": "已愈，但阴雨天会疼",
+    "所在": "神界·中枢"
+   },
+   "state_c2": {
+    "右手": "缺了半截小指",
+    "身份": "神界·叛神"
+   },
+   "state_c3": {
+    "左耳": "耳垂上有个豁口",
+    "关系": "已死（第 2600 章）"
+   },
+   "due_foreshadow": [],
+   "overdue": [
+    {
+     "id": "f1",
+     "content": "沈鹤年右手缺指，他说是年轻时被机器咬的",
+     "planted": 100
+    },
+    {
+     "id": "f2",
+     "content": "母亲留下的铜镜背面刻着一行看不懂的字",
+     "planted": 450
+    },
+    {
+     "id": "f3",
+     "content": "陆无咎说过「界壁不是墙，是筛子」",
+     "planted": 980
+    },
+    {
+     "id": "f4",
+     "content": "断臂后梦里总有人叫他去西边",
+     "planted": 2100
+    },
+    {
+     "id": "f5",
+     "content": "天枢称林昭为「第二位」",
+     "planted": 4200
+    }
+   ],
+   "inject_chars": 1950,
+   "inject_block": "【作品】《》｜\n【一句话】\n【进度】第 4999 / 5000 章（第 100/100 卷 · 第 5 弧）\n\n【力量体系 · 第 4999 章】\n当前界：神界（炼虚合道。神界以神格为基，神格唯一，不可复制。）\n当前境界：神主后期（第 4953~5000 章）\n下一阶：无（已至终点）\n本界境界序列：神人 → 神使 → 神将 → 神君 → 神王 → 神皇 → 神帝 → 神尊 → 神主\n硬规则：境界共四界三十六境，每境三阶（初期/中期/后期），共一百零八阶。；境界不可跳级。可以借外力短时爆发，但事后必然反噬。；跨界飞升会受界壁压制，境界暂时跌落至新界底层，需重新攀升。；死者不可复生。任何复活情节都是设定错误。\n\n【世界状态 · 第 4999 章】\n故事内时间：神界·终局 · 神主\n\n▸ 林昭\n  · 左眉骨：一道三厘米的旧疤\n  · 境界：神主后期\n  · 右臂：已愈，但阴雨天会疼\n  · 所在：神界·中枢\n  · 数值：战力 998800\n  · 声音：语气=冷硬，少废话；口头禅=嗯/走；绝不说=其实/或许\n\n▸ 沈鹤年\n  · 右手：缺了半截小指\n  · 身份：神界·叛神\n  · 数值：战力 998800\n  · 声音：语气=慢，爱用反问；口头禅=你说呢；绝不说=综上所述\n\n▸ 苏见月\n  · 左耳：耳垂上有个豁口\n  · 关系：已死（第 2600 章）\n  · 数值：战力 998800\n  · 声音：语气=短促，带刺；口头禅=废话；绝不说=抱歉\n\n【⚠️ 逾期未回收 5 条：f1, f2, f3, f4, f5】\n\n【世界硬规则】\n  · 境界共四界三十六境，每境三阶（初期/中期/后期），共一百零八阶。\n  · 境界不可跳级。可以借外力短时爆发，但事后必然反噬。\n  · 跨界飞升会受界壁压制，境界暂时跌落至新界底层，需重新攀升。\n  · 死者不可复生。任何复活情节都是设定错误。\n  · 神格唯一。同一神格不能同时存在两个持有者。\n\n【本卷目标】第100卷：卷目标100\n\n【本章】第4999章\n  · 事件一\n  · 事件二\n  · 事件三\n  · 本章必须停在这里：他关上了门。\n\n【上一章最后一段（原文，必须无缝接上）】\n他关上了门。门外有人在等。\n\n\n【写作契约·硬约束，违反任何一条都算失败】\n\n一、句子\n- 平均句长 12~18 字。每 200 字内至少出现 2 个 8 字以内的短句。\n- 禁止连续 3 个长句。长句之后必须跟短句。\n- 句长必须有明显起伏：最短 2 字，最长可到 50 字。\n\n二、描写\n- 只写\"摄像机拍得到、录音机录得到\"的东西：动作、器物、声音、气味、温度、光影。\n- 不写\"他感到\"\"他心想\"\"他意识到\"。\n- 抽象名词（命运、意义、救赎、灵魂、价值、本质）全篇出现不超过 3 次。\n\n三、对话\n- 对话必须口语化，允许打断、答非所问、说半句、沉默。\n- 禁止解释性台词（\"你知道的，自从那件事以后……\"这种交代信息的句子）。\n- 每个主要人物有独立的说话方式：句子长短、口头禅、避讳的词，都不同。\n\n四、结构\n- 每段结尾停在具体动作或物件上，不做总结。\n- 场景转换用硬切，不用\"与此同时\"之类的过渡。\n- 不解释因果。把因果留给读者。\n\n五、禁用词（出现任何一个即判定失败）\n仿佛、似乎、不禁、不由得、缓缓、微微、轻轻、悄然、默默、一丝、一抹、一缕、 几分、些许、隐约、恍惚、如同、宛如、犹如、恰似、瞳孔骤缩、瞳孔微缩、 嘴角勾起、嘴角微微上扬、眼底闪过、眼中闪过、不易察觉、若有所思、意味深长、 深吸一口气、缓缓开口、沉默片刻、良久、叹了口气、苦笑一声、眼神复杂、 神色复杂、心中涌起、心头一震、心中一惊、五味杂陈、百感交集、如遭雷击、 难以言喻、无法言说、不知为何、与此同时、然而、尽管如此、总而言之、 换句话说、值得一提的是、命运的齿轮、冥冥之中、这一刻、就在这一刻、 终于明白、恍然大悟、一切都不一样了、无尽的、深深的、淡淡的、莫名的、 前所未有的、难以形容的、无法抗拒的、令人窒息的、如同时间静止、 仿佛时间静止、仿佛整个世界、如同一道闪电、如同一记重锤\n\n六、禁用结构\n1. 禁止段末总结/升华。段落的最后一句必须是具体动作、具体物件、或一句对话。\n2. 禁止\"不仅…而且\"\"既…又\"\"不是…而是\"这类对仗句式。\n3. 禁止三句以上连续排比。\n4. 禁止用\"他感到/他觉得/他心中\"引出情绪，改用身体反应或动作失误。\n5. 禁止解释人物为什么这么做。读者要自己看出来。\n6. 禁止让配角说出主题句。主题只能由情节呈现。\n7. 禁止\"总结全文\"式结尾。\n8. 禁止每段长度相近。段落必须有长有短，最短可以只有一行。\n"
+  }
+ ],
+ "stats": {
+  "levels": 108,
+  "entities": 8,
+  "cast": 8,
+  "facts": 32,
+  "foreshadows": 5
+ }
+};
+
+// ---------- 工具 ----------
+const $ = s => document.querySelector(s);
+const fmt = n => n.toLocaleString('en-US');
+const REALM_COLOR = {"人界":"var(--realm1)","灵界":"var(--realm2)",
+                     "仙界":"var(--realm3)","神界":"var(--realm4)"};
+const REALM_HEX = {"人界":"#60a5fa","灵界":"#a78bfa",
+                   "仙界":"#fbbf24","神界":"#fb7185"};
+
+// 探测章 -> 数据
+const PROBE = {};
+D.probes.forEach(p => PROBE[p.chapter] = p);
+const PROBE_KEYS = D.probes.map(p => p.chapter).sort((a,b)=>a-b);
+
+function nearestProbe(ch){
+  let best = PROBE_KEYS[0], bd = Infinity;
+  for(const k of PROBE_KEYS){
+    const d = Math.abs(k-ch);
+    if(d < bd){bd=d; best=k;}
+  }
+  return best;
+}
+
+// 从 108 阶里查当前境界（精确，不靠探测）
+function levelAt(ch){
+  for(const lv of D.world.levels){
+    if(ch >= lv.s && ch <= lv.e) return lv;
+  }
+  return D.world.levels[D.world.levels.length-1];
+}
+function realmAt(ch){
+  const lv = levelAt(ch);
+  return D.world.realms.find(r => r.name === lv.realm) || D.world.realms[0];
+}
+
+// ---------- KPI ----------
+$('#kCh').textContent = fmt(D.total_chapters);
+$('#kLv').textContent = D.stats.levels;
+$('#kEnt').textContent = D.stats.entities;
+$('#kFact').textContent = D.stats.facts;
+const injMin = Math.min(...D.probes.map(p=>p.inject_chars));
+const injMax = Math.max(...D.probes.map(p=>p.inject_chars));
+$('#kInj').textContent = (injMin/1000).toFixed(1)+'K';
+
+// ---------- 力量曲线 ----------
+const cv = $('#powerChart');
+function drawPower(){
+  const dpr = window.devicePixelRatio || 1;
+  const w = cv.clientWidth, h = 190;
+  cv.width = w*dpr; cv.height = h*dpr;
+  const ctx = cv.getContext('2d');
+  ctx.scale(dpr,dpr);
+  ctx.clearRect(0,0,w,h);
+
+  const pad = {l:52,r:14,t:12,b:22};
+  const iw = w-pad.l-pad.r, ih = h-pad.t-pad.b;
+  const N = D.total_chapters;
+  const maxP = Math.log10(D.world.levels[D.world.levels.length-1].power);
+  const minP = 0;
+  const X = ch => pad.l + (ch-1)/(N-1)*iw;
+  const Y = p => pad.t + ih - (Math.log10(Math.max(1,p))-minP)/(maxP-minP)*ih;
+
+  // 网格 + Y 轴
+  ctx.font = '9px ui-monospace,monospace';
+  ctx.fillStyle = '#475569';
+  for(let e=0; e<=maxP; e+=3){
+    const y = pad.t + ih - (e-minP)/(maxP-minP)*ih;
+    ctx.strokeStyle = 'rgba(30,41,59,.7)';
+    ctx.beginPath(); ctx.moveTo(pad.l,y); ctx.lineTo(w-pad.r,y); ctx.stroke();
+    ctx.fillText('1e'+e, 8, y+3);
+  }
+  // X 轴章号
+  [1,1601,3001,4201,5000].forEach(c=>{
+    ctx.fillStyle='#475569';
+    ctx.fillText(c, X(c)-12, h-6);
+  });
+
+  // 每界填充
+  D.world.realms.forEach(r=>{
+    const x0=X(r.start), x1=X(r.end);
+    ctx.fillStyle = REALM_HEX[r.name]+'14';
+    ctx.fillRect(x0, pad.t, x1-x0, ih);
+    ctx.fillStyle = REALM_HEX[r.name];
+    ctx.font = '10px sans-serif';
+    ctx.fillText(r.name, x0+6, pad.t+13);
+    ctx.font = '9px ui-monospace,monospace';
+  });
+
+  // 战力曲线
+  ctx.beginPath();
+  D.world.levels.forEach((lv,i)=>{
+    const x = X((lv.s+lv.e)/2), y = Y(lv.power);
+    i===0 ? ctx.moveTo(x,y) : ctx.lineTo(x,y);
+  });
+  ctx.strokeStyle = '#22d3ee'; ctx.lineWidth = 1.8;
+  ctx.shadowColor='rgba(34,211,238,.5)'; ctx.shadowBlur=6;
+  ctx.stroke(); ctx.shadowBlur=0;
+
+  // 界内 rank（锯齿，虚线）
+  ctx.beginPath();
+  D.world.levels.forEach((lv,i)=>{
+    const x = X((lv.s+lv.e)/2);
+    const y = pad.t + ih - lv.rank*ih;
+    i===0 ? ctx.moveTo(x,y) : ctx.lineTo(x,y);
+  });
+  ctx.strokeStyle = 'rgba(251,191,36,.55)'; ctx.lineWidth = 1.2;
+  ctx.setLineDash([3,3]); ctx.stroke(); ctx.setLineDash([]);
+
+  // 当前章位置
+  const ch = +$('#scrub').value;
+  const x = X(ch);
+  ctx.strokeStyle='rgba(255,255,255,.85)'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(x,pad.t); ctx.lineTo(x,pad.t+ih); ctx.stroke();
+  const lv = levelAt(ch);
+  ctx.beginPath();
+  ctx.arc(x, Y(lv.power), 4, 0, Math.PI*2);
+  ctx.fillStyle='#fff'; ctx.fill();
+  ctx.strokeStyle='#22d3ee'; ctx.lineWidth=2; ctx.stroke();
+}
+window.addEventListener('resize', drawPower);
+
+// ---------- 三级大纲 ----------
+function renderLadder(ch){
+  const perVol = 50, perArc = 10;
+  const vol = Math.floor((ch-1)/perVol)+1;
+  const arc = Math.floor(((ch-1)%perVol)/perArc)+1;
+  const rows = [
+    {k:'全书', v:'《四界》', w:100, c:'#0ea5e9', meta:'1 次生成 · 脊柱'},
+    {k:'卷', v:'第 '+vol+' 卷', w:100, c:'#22d3ee',
+     meta:'第 '+((vol-1)*perVol+1)+'~'+Math.min(vol*perVol,5000)+' 章'},
+    {k:'弧', v:'第 '+vol+' 卷第 '+arc+' 弧', w:72, c:'#a78bfa',
+     meta:'10 章'},
+    {k:'章', v:'第 '+ch+' 章', w:44, c:'#fbbf24', meta:'4000 字'},
+  ];
+  $('#ladder').innerHTML = rows.map(r=>`
+    <div class="lvl">
+      <div class="k">${r.k}</div>
+      <div class="bar" style="width:${r.w}%;background:linear-gradient(90deg,${r.c},${r.c}88)">${r.v}</div>
+      <div class="meta">${r.meta}</div>
+    </div>`).join('');
+}
+
+// ---------- 存储层 ----------
+const STORES = [
+  {id:'world', nm:'世界观', cnt:D.stats.levels+' 阶', dot:'#60a5fa',
+   desc:'四界 · 36 大境界 · 108 小阶 · 灵根 · 法宝 · 丹药',
+   why:'硬编码，模型无权修改。注入时只给当前界+当前阶+下一阶'},
+  {id:'outline', nm:'大纲树', cnt:'4 层', dot:'#22d3ee',
+   desc:'总纲 / 卷纲 / 弧纲 / 章纲，滚动细化',
+   why:'只细化到"接下来要写的这一段"，上层已定死'},
+  {id:'entity', nm:'人物实体', cnt:D.stats.entities+' 人', dot:'#a78bfa',
+   desc:'姓名 · 别名 · 声纹（语气/口头禅/绝不说）',
+   why:'声纹防 5000 章人物说话方式漂移'},
+  {id:'fact', nm:'时序事实', cnt:D.stats.facts+' 条', dot:'#34d399',
+   desc:'带有效期区间。第 2200 章查右臂=断，第 3000 章=已愈',
+   why:'这是整个架构的地基，RAG 替代不了'},
+  {id:'numeric', nm:'数值曲线', cnt:'3 条', dot:'#fbbf24',
+   desc:'战力/等级随章节的插值曲线',
+   why:'防战力膨胀失控，写作时强制落在曲线上'},
+  {id:'foreshadow', nm:'伏笔账本', cnt:D.stats.foreshadows+' 条', dot:'#fb7185',
+   desc:'埋设章 / 回收窗口 / 权重',
+   why:'跨 2900 章的承诺，逾期自动报警'},
+  {id:'timeline', nm:'时间线', cnt:D.canon.timeline.length+' 点', dot:'#94a3b8',
+   desc:'故事内时间（不是章号）',
+   why:'防止第 3000 章倒退回第 2 天'},
+  {id:'chapter', nm:'章节正文', cnt:'5000 篇', dot:'#64748b',
+   desc:'每章 4000 字，落盘可断点续跑',
+   why:'只取上一章最后 400 字用于衔接，其余不注入'},
+];
+
+function renderStores(ch){
+  $('#stores').innerHTML = STORES.map((s,i)=>`
+    <div class="store" data-i="${i}">
+      <div class="nm"><span><span class="dot" style="background:${s.dot}"></span>${s.nm}</span>
+        <span class="cnt">${s.cnt}</span></div>
+      <div class="desc">${s.desc}</div>
+      <div class="why">↳ ${s.why}</div>
+    </div>`).join('');
+  document.querySelectorAll('.store').forEach(el=>{
+    el.onclick = ()=>{
+      document.querySelectorAll('.store').forEach(x=>x.classList.remove('active'));
+      el.classList.add('active');
+    };
+  });
+}
+
+// ---------- 四层大纲 ----------
+function renderOutlineTree(ch){
+  const el = document.querySelector('#outlineTree');
+  if(!el) return;
+  const pr = PROBE[nearestProbe(ch)];
+  if(!pr || !pr.act) { el.innerHTML = '<div class="ol-d">无数据</div>'; return; }
+  const a = pr.act, v = pr.volume, ar = pr.arc, c = pr.chapter_outline;
+  el.innerHTML = `
+    <div class="ol-node act">
+      <div class="ol-k">第 ${a.no} 幕 / 全书总纲</div>
+      <div class="ol-v">${a.name}</div>
+      <div class="ol-d">冲突：${a.conflict}</div>
+      <div class="ol-d">不可逆：${a.irreversible}</div>
+      <div class="ol-esc">升级：${a.escalates}</div>
+    </div>
+    <div class="ol-node vol">
+      <div class="ol-k">第 ${v.no} 卷 / 卷纲（第 ${v.start}~${v.end} 章）</div>
+      <div class="ol-v">${v.name}</div>
+      <div class="ol-d">${v.goal}</div>
+      <div class="ol-esc">${v.escalates}</div>
+    </div>
+    <div class="ol-node arc">
+      <div class="ol-k">第 ${ar.no} 弧 / 弧纲（第 ${ar.start}~${ar.end} 章）</div>
+      <div class="ol-v">${ar.name}</div>
+      <div class="ol-d">${ar.goal}</div>
+      <div class="ol-esc">${ar.escalates}</div>
+    </div>
+    <div class="ol-node ch">
+      <div class="ol-k">第 ${c.no} 章 / 章纲</div>
+      <div class="ol-v">《${c.title}》</div>
+      <div class="ol-d">${c.goal}</div>
+    </div>`;
+}
+
+function renderChapterOutline(ch){
+  const el = document.querySelector('#chOutline');
+  if(!el) return;
+  const pr = PROBE[nearestProbe(ch)];
+  const c = pr && pr.chapter_outline;
+  if(!c){ el.innerHTML = '<div class="ol-d">无数据</div>'; return; }
+  const beats = c.beats.map(b =>
+    `<div class="beat-item">
+       <span class="beat-kind bk-${b.kind}">${b.kind}</span>
+       <span class="beat-txt">${b.text}</span>
+     </div>`).join('');
+  el.innerHTML = `
+    <div class="ch-meta">
+      <span>章号 <b>${c.no}</b></span>
+      <span>境界 <b>${c.level}</b></span>
+      <span>字数 <b>${c.words}</b></span>
+      <span>转折 <b>${c.turn}</b></span>
+    </div>
+    ${beats}
+    <div class="ch-end">本章必须停在这里：${c.ends_with}</div>`;
+}
+
+// ---------- 人物 ----------
+function renderCast(ch){
+  const grid = document.querySelector('#castGrid');
+  if(!grid) return;
+  const rows = (D.cast || []).map(c=>{
+    const present = c.first_appear <= ch
+                 && (c.last_appear === null || ch <= c.last_appear);
+    const appeared = c.first_appear <= ch;
+    const dead = c.last_appear !== null && ch > c.last_appear;
+    // 当前境界：取最后一个 <= ch 的里程碑
+    let lv = null;
+    for(const m of c.milestones){
+      if(m.chapter <= ch) lv = m; else break;
+    }
+    const lvName = lv ? lv.level : '未登场';
+    const lvIdx = lv ? lv.level_index : 0;
+    const pct = lvIdx / 108 * 100;
+    const v = c.voice || {};
+    const tics = (v['口头禅'] || []).join('/');
+    const banned = (v['禁用词'] || []).join('/');
+    return `<div class="cast-card ${present?'present':''} ${dead?'dead':''}">
+      <div class="hd">
+        <span class="nm">${c.name}</span>
+        <span class="rl">${c.role}</span>
+      </div>
+      <div class="lv">${appeared ? lvName : '第 '+c.first_appear+' 章登场'}
+        <span style="color:var(--dim);font-size:9.5px">
+          ${appeared && lv ? '（第 '+lvIdx+'/108 阶）' : ''}</span></div>
+      <div class="vc">${v['语气'] || ''}</div>
+      <div class="vc">口头禅 <span class="tics">${tics || '—'}</span></div>
+      <div class="vc">绝不说 <span class="banned">${banned || '—'}</span></div>
+      <div class="prog"><div style="width:${pct}%"></div></div>
+    </div>`;
+  }).join('');
+  grid.innerHTML = rows;
+}
+
+// ---------- 事实甘特 ----------
+function renderGantt(ch){
+  const N = D.total_chapters;
+  const rows = D.canon.facts.filter(f=>f.from <= 5000).slice(0,18);
+  const X = c => (c-1)/(N-1)*100;
+  $('#gantt').innerHTML = rows.map(f=>{
+    const to = f.to === null ? N : f.to;
+    const l = X(f.from), w = Math.max(0.4, X(to)-X(f.from));
+    const active = (ch>=f.from && ch<=(f.to===null?N:f.to));
+    const col = f.immutable ? '#fb7185'
+              : (active ? '#22d3ee' : '#3b82f6');
+    const op = active ? 1 : 0.35;
+    const ent = D.canon.entities.find(e=>e.id===f.entity);
+    const nm = ent ? ent.name : f.entity;
+    return `<div class="gantt-row">
+      <div class="gantt-lbl" title="${nm}.${f.key}">${nm}.${f.key}</div>
+      <div class="gantt-track">
+        <div class="gantt-bar ${f.immutable?'imm':''} ${active?'active':''}"
+          style="left:${l}%;width:${w}%;background:${col};opacity:${op}"
+          title="${f.key} = ${f.value}&#10;第 ${f.from} 章 ~ ${f.to===null?'至今':'第 '+f.to+' 章'}"></div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ---------- 伏笔表 ----------
+function renderForeshadow(ch){
+  const tb = $('#fsTable tbody');
+  tb.innerHTML = D.canon.foreshadows.map(f=>{
+    let st, cls;
+    if(ch > f.hi){ st='逾期'; cls='od'; }
+    else if(ch >= f.lo){ st='应回收'; cls='due'; }
+    else if(ch >= f.planted){ st='已埋'; cls='mut'; }
+    else { st='未埋'; cls=''; }
+    return `<tr>
+      <td class="mono">${f.id}</td>
+      <td style="font-size:10.5px">${f.content}</td>
+      <td class="mono">${f.planted}</td>
+      <td class="mono">${f.lo}~${f.hi}</td>
+      <td><span class="pill ${cls}">${st}</span></td>
+    </tr>`;
+  }).join('');
+}
+
+// ---------- 注入块 ----------
+function renderInject(ch){
+  const p = PROBE[nearestProbe(ch)];
+  $('#injCh').textContent = ch;
+  $('#injSize').textContent =
+    `实际注入 ${p.inject_chars} 字符 ≈ ${Math.round(p.inject_chars/2)} tokens`;
+  $('#injSize').style.color = 'var(--cyan)';
+
+  // 预算条（按段落长度估算比例）
+  const block = p.inject_block;
+  const parts = [
+    {n:'力量体系', c:'#60a5fa', w:250},
+    {n:'世界状态', c:'#34d399', w:520},
+    {n:'卷/弧目标', c:'#22d3ee', w:180},
+    {n:'本章大纲', c:'#a78bfa', w:220},
+    {n:'上章结尾', c:'#fbbf24', w:200},
+    {n:'写作契约', c:'#fb7185', w:600},
+  ];
+  const tot = parts.reduce((a,b)=>a+b.w,0);
+  $('#budget').innerHTML = parts.map(x=>
+    `<div style="width:${x.w/tot*100}%;background:${x.c}"
+      title="${x.n} ~${x.w} 字符"></div>`).join('');
+
+  // 高亮
+  let h = block
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/(【[^】]*】)/g, '<span class="hl-c">$1</span>')
+    .replace(/(当前境界：[^\n]*)/g, '<span class="hl-v">$1</span>')
+    .replace(/(下一阶：[^\n]*)/g, '<span class="hl-v">$1</span>')
+    .replace(/(即将到期的伏笔)/g, '<span class="hl-a">$1</span>')
+    .replace(/(逾期未回收[^\n】]*)/g, '<span class="hl-r">$1</span>')
+    .replace(/(▸ [^\n]*)/g, '<span class="hl-g">$1</span>');
+  $('#inject').innerHTML = h;
+}
+
+// ---------- 主更新 ----------
+function update(){
+  const ch = +$('#scrub').value;
+  const lv = levelAt(ch);
+  const rm = realmAt(ch);
+
+  $('#scrubVal').textContent = fmt(ch);
+  $('#scrubRealm').textContent = lv.realm + ' · ' + lv.name;
+  $('#scrubRealm').style.color = REALM_HEX[lv.realm];
+
+  drawPower();
+  renderLadder(ch);
+  renderCast(ch);
+  renderOutlineTree(ch);
+  renderChapterOutline(ch);
+  renderGantt(ch);
+  renderForeshadow(ch);
+  renderInject(ch);
+}
+
+$('#scrub').addEventListener('input', update);
+document.querySelectorAll('.jump').forEach(b=>{
+  b.onclick = ()=>{ $('#scrub').value = b.dataset.ch; update(); };
+});
+
+renderStores(1);
+update();
+</script>
+</body>
+</html>

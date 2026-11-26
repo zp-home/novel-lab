@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>novel-lab 控制台</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230b0f14'/%3E%3Cpath d='M18 46V18l14 18V18' stroke='%235aa2ff' stroke-width='5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="app">
+  <header class="topbar">
+    <div class="brand">
+      <span class="logo" aria-hidden="true">N</span>
+      <div class="brand-text">
+        <h1>novel-lab 控制台</h1>
+        <p>确定性大纲 · 逐章正文 · 文体质量（静态快照只读版 · <a href="../" style="color:#5aa2ff">返回首页</a>）</p>
+      </div>
+    </div>
+    <div class="top-actions">
+      <label class="field-inline">
+        <span>项目</span>
+        <select id="projectSelect" class="select" aria-label="选择项目"></select>
+      </label>
+      <div id="statusPill" class="pill pill-idle">初始化中…</div>
+    </div>
+  </header>
+
+  <nav class="tabs" role="tablist" aria-label="视图切换">
+    <button class="tab is-active" type="button" role="tab" data-view="projects">项目</button>
+    <button class="tab" type="button" role="tab" data-view="reader">正文阅读</button>
+    <button class="tab" type="button" role="tab" data-view="quality">文体质量</button>
+    <button class="tab" type="button" role="tab" data-view="logs">日志</button>
+    <div class="tabs-spacer"></div>
+    <div class="tabs-meta mono" id="metaClock">—</div>
+  </nav>
+
+  <main class="main">
+    <section class="view is-active" id="view-projects" aria-label="项目">
+      <div class="view-head">
+        <h2>项目</h2>
+        <div class="view-actions">
+          <span class="muted small">数据来自 projects/*.toml 与 out/*/manifest.json</span>
+          <button id="btnReloadProjects" class="btn btn-ghost" type="button">刷新</button>
+        </div>
+      </div>
+      <div id="projectsError" class="inline-error" hidden></div>
+      <div id="projectGrid" class="grid"></div>
+      <div id="projectsEmpty" class="empty" hidden>暂无数据</div>
+    </section>
+
+    <section class="view" id="view-reader" aria-label="正文阅读">
+      <div class="view-head">
+        <h2>正文阅读</h2>
+        <div class="view-actions reader-actions">
+          <button id="btnPrevChapter" class="btn btn-ghost" type="button">上一章</button>
+          <label class="field-inline">
+            <span>章号</span>
+            <input id="chapterInput" class="input input-num mono" type="number" min="1" step="1" value="1">
+          </label>
+          <button id="btnGoChapter" class="btn" type="button">跳转</button>
+          <button id="btnNextChapter" class="btn btn-ghost" type="button">下一章</button>
+          <button id="btnLatestChapter" class="btn btn-ghost" type="button">最新章</button>
+        </div>
+      </div>
+      <div id="readerMeta" class="meta-row"></div>
+      <div id="readerError" class="inline-error" hidden></div>
+      <article id="readerBody" class="reader-body mono" aria-live="polite"></article>
+      <div id="readerEmpty" class="empty" hidden>暂无数据</div>
+    </section>
+
+    <section class="view" id="view-quality" aria-label="文体质量">
+      <div class="view-head">
+        <h2>文体质量</h2>
+        <div class="view-actions">
+          <span id="qualityUpdated" class="muted small">—</span>
+        </div>
+      </div>
+      <div id="qualityError" class="inline-error" hidden></div>
+      <div id="qualityTiles" class="tiles"></div>
+
+      <section class="panel">
+        <div class="panel-head">
+          <h3>目标区间</h3>
+          <span class="muted small">manifest.lint_targets：绿色带为健康区间，竖线为 manifest 提供的当前值</span>
+        </div>
+        <div id="lintBars" class="bars"></div>
+        <div id="lintEmpty" class="empty small" hidden>暂无数据</div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head">
+          <h3>待修章节</h3>
+          <span class="muted small">按文体评分升序，最多 20 章（点击「阅读」跳转）</span>
+        </div>
+        <div class="table-wrap">
+          <table class="table">
+            <thead>
+              <tr>
+                <th class="col-no">章号</th>
+                <th class="col-num">字数</th>
+                <th class="col-num">评分</th>
+                <th class="col-num">重试</th>
+                <th>问题</th>
+                <th class="col-act"></th>
+              </tr>
+            </thead>
+            <tbody id="fixTableBody"></tbody>
+          </table>
+        </div>
+        <div id="fixEmpty" class="empty small" hidden>暂无数据</div>
+      </section>
+    </section>
+
+    <section class="view" id="view-logs" aria-label="日志">
+      <div class="view-head">
+        <h2>日志</h2>
+        <div class="view-actions">
+          <label class="field-inline">
+            <span>末尾</span>
+            <select id="logTail" class="select select-sm" aria-label="日志行数">
+              <option value="100">100 行</option>
+              <option value="300" selected>300 行</option>
+              <option value="1000">1000 行</option>
+            </select>
+          </label>
+          <label class="check"><input type="checkbox" id="logPause"> 暂停刷新</label>
+          <button id="btnReloadLog" class="btn btn-ghost" type="button">立即刷新</button>
+        </div>
+      </div>
+      <div id="logsError" class="inline-error" hidden></div>
+      <div id="logsMeta" class="meta-row muted small">—</div>
+      <pre id="logBody" class="log-body mono"></pre>
+      <div id="logsEmpty" class="empty" hidden>暂无数据</div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <span>novel-lab Web 控制台 · 纯标准库 · 每 3 秒轮询</span>
+    <span id="footerInfo" class="mono">—</span>
+  </footer>
+</div>
+
+<div id="toasts" class="toasts" aria-live="polite"></div>
+
+<div id="runModal" class="modal" hidden>
+  <div class="modal-backdrop" data-close="1"></div>
+  <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="runModalTitle">
+    <div class="modal-head">
+      <h3 id="runModalTitle">开始写作</h3>
+      <button class="icon-btn" type="button" data-close="1" aria-label="关闭">×</button>
+    </div>
+    <div class="modal-body">
+      <p class="muted small" id="runModalHint">—</p>
+      <div class="form-grid">
+        <label class="field"><span>从第几章</span><input id="runFrom" class="input mono" type="number" min="1" step="1"></label>
+        <label class="field"><span>到第几章</span><input id="runTo" class="input mono" type="number" min="1" step="1"></label>
+      </div>
+      <p class="muted small">将执行：<code id="runCmdPreview" class="mono">—</code></p>
+      <div id="runModalError" class="inline-error" hidden></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" type="button" data-close="1">取消</button>
+      <button id="btnRunConfirm" class="btn btn-primary" type="button">开始写作</button>
+    </div>
+  </div>
+</div>
+
+<script src="static-shim.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

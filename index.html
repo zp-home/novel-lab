@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>novel-lab · 5000 章小说 Agent 静态展示站</title>
+<style>
+:root{
+  --bg:#080b12;--panel:#111827;--panel2:#151d2e;--line:#1e293b;
+  --txt:#cbd5e1;--txt2:#94a3b8;--dim:#64748b;
+  --cyan:#22d3ee;--emerald:#34d399;--amber:#fbbf24;--violet:#a78bfa;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--txt);font-family:-apple-system,"Segoe UI","Microsoft YaHei",sans-serif;line-height:1.65}
+.wrap{max-width:1120px;margin:0 auto;padding:36px 24px 72px}
+.hero{padding-bottom:24px;border-bottom:1px solid var(--line);margin-bottom:26px}
+.badge{display:inline-block;font-size:11.5px;padding:3px 9px;border-radius:999px;background:rgba(34,211,238,.12);color:var(--cyan);margin-bottom:10px}
+h1{font-size:28px;color:#f8fafc;letter-spacing:.3px;margin-bottom:8px}
+.lead{color:var(--txt2);max-width:780px;font-size:14.5px}
+.hero-actions{margin-top:16px;display:flex;gap:12px;flex-wrap:wrap}
+.btn-primary{background:var(--cyan);color:#06121e;font-weight:600;padding:8px 16px;border-radius:8px;text-decoration:none;font-size:13.5px}
+.btn-ghost{border:1px solid var(--line);color:#e2e8f0;padding:8px 16px;border-radius:8px;text-decoration:none;font-size:13.5px;background:var(--panel)}
+.btn-ghost:hover{border-color:var(--cyan)}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:16px;margin-bottom:26px}
+.card{background:linear-gradient(180deg,var(--panel),var(--panel2));border:1px solid var(--line);border-radius:12px;padding:18px;display:flex;flex-direction:column;justify-content:space-between;text-decoration:none;color:inherit;transition:transform .12s,border-color .15s}
+.card:hover{transform:translateY(-2px);border-color:var(--cyan)}
+.card .tag{font-size:11px;color:var(--cyan);margin-bottom:6px;font-family:ui-monospace,monospace}
+.card h2{font-size:16.5px;color:#f1f5f9;margin-bottom:8px}
+.card p{font-size:13px;color:var(--txt2);margin-bottom:14px}
+.card .foot{font-size:12px;color:var(--emerald);font-weight:600}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}
+.stat{background:rgba(15,23,42,.7);border:1px solid var(--line);border-radius:10px;padding:14px}
+.stat .v{font-size:22px;font-weight:700;color:var(--cyan);font-variant-numeric:tabular-nums}
+.stat .k{font-size:12px;color:var(--dim);margin-top:2px}
+footer{margin-top:34px;padding-top:18px;border-top:1px solid var(--line);color:var(--dim);font-size:12px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px}
+footer a{color:var(--cyan);text-decoration:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <section class="hero">
+    <span class="badge">Open Source · Python 标准库零依赖 · 5000 章超长篇基准</span>
+    <h1>novel-lab · 《四界》长篇小说 Agent 工程</h1>
+    <p class="lead">围绕「时序正典 Canon + 恒定上下文注入 + 四层确定性大纲 + 两层文体门禁」构建的超长篇生成体系。以下为全部部署的静态可视化页面与《四界》当前已生成章节快照。</p>
+    <div class="hero-actions">
+      <a class="btn-primary" href="dashboard.html">打开记忆架构大屏</a>
+      <a class="btn-ghost" href="outline.html">浏览 5000 章大纲</a>
+      <a class="btn-ghost" href="https://github.com/zp-home/novel-lab" target="_blank" rel="noopener">GitHub 开源仓库</a>
+    </div>
+  </section>
+
+  <section class="grid">
+    <a class="card" href="dashboard.html">
+      <div>
+        <div class="tag">01 / MEMORY ARCHITECTURE</div>
+        <h2>长篇记忆架构大屏</h2>
+        <p>7 个交互面板：四界 108 阶锯齿战力天梯、7 层存储架构、8 位人物、时序真相甘特图、伏笔账本、恒定上下文注入与 RAG 对比。</p>
+      </div>
+      <div class="foot">进入大屏 →</div>
+    </a>
+    <a class="card" href="outline.html">
+      <div>
+        <div class="tag">02 / OUTLINE BROWSER</div>
+        <h2>《四界》5000 章大纲浏览器</h2>
+        <p>总纲主脊、6 幕冲突升级、125 条里程碑、100 卷 / 500 弧索引，以及前 200 章完整章纲与 4 节拍。</p>
+      </div>
+      <div class="foot">查看大纲 →</div>
+    </a>
+    <a class="card" href="progress.html">
+      <div>
+        <div class="tag">03 / PROGRESS SNAPSHOT</div>
+        <h2>正文生成进度看板</h2>
+        <p>前 200 章实写进度总览、单章字数与套话/英文污染质检网格、最新章节首尾片段预览。</p>
+      </div>
+      <div class="foot">已收 18 章 · 进入看板 →</div>
+    </a>
+    <a class="card" href="console/">
+      <div>
+        <div class="tag">04 / WEB CONSOLE (STATIC)</div>
+        <h2>Web 控制台只读体验版</h2>
+        <p>与本地 web/server.py 同款界面，内置 sijie 已写章节与文体评分快照，支持逐章正文阅读与待修榜单查看。</p>
+      </div>
+      <div class="foot">已载 18 章正文 · 打开控制台 →</div>
+    </a>
+  </section>
+
+  <section class="stats">
+    <div class="stat"><div class="v">5,000</div><div class="k">规划总章数（4 界 / 108 阶）</div></div>
+    <div class="stat"><div class="v">18 / 200</div><div class="k">首批已落盘章节快照</div></div>
+    <div class="stat"><div class="v">3,276 字</div><div class="k">平均单章汉字数</div></div>
+    <div class="stat"><div class="v">10.0%</div><div class="k">1→5000 章上下文漂移</div></div>
+  </section>
+
+  <footer>
+    <span>快照生成于 2026-11-26 13:44:54（Asia/Shanghai）</span>
+    <span>开源协议：MIT · <a href="https://github.com/zp-home/novel-lab" target="_blank" rel="noopener">github.com/zp-home/novel-lab</a></span>
+  </footer>
+</div>
+</body>
+</html>
