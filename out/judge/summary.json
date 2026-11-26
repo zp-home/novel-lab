@@ -1,0 +1,538 @@
+{
+  "A": {
+    "chars": 73608,
+    "sentences": 6086,
+    "avg_sent": 12.1,
+    "score": 82.5,
+    "grade": "易读",
+    "penalty": 17.5,
+    "alt_score": 94.5,
+    "alt_grade": "易读",
+    "values": {
+      "de_per_100": 2.0971,
+      "de_triple_per_1k": 0.0,
+      "sent_ge3de_ratio": 0.0064,
+      "static_ratio": 0.0477,
+      "short_runs_per_1k": 3.4221,
+      "short_ratio": 0.3547,
+      "open_runs_per_1k": 0.0944,
+      "epithet_per_1k": 1.114,
+      "action_phr_per_1k": 0.3392,
+      "explain_ratio": 0.0009,
+      "long_sent_ratio": 0.0228,
+      "micro_action_ratio": 0.1927,
+      "new_name_per_300": 0.7672,
+      "turn_new_info": 0.4404,
+      "comma_chain_ratio": 0.0298
+    },
+    "penalty_detail": [
+      {
+        "key": "short_runs_per_1k",
+        "label": "碎句轰炸·连续≥3句≤6字(段/千字)",
+        "value": 3.4221,
+        "points": 6.0,
+        "level": "bad"
+      },
+      {
+        "key": "micro_action_ratio",
+        "label": "描述过重·碎动作链句占比",
+        "value": 0.1927,
+        "points": 3.8,
+        "level": "bad"
+      },
+      {
+        "key": "static_ratio",
+        "label": "无关细节·纯静物/环境句占比",
+        "value": 0.0477,
+        "points": 3.3,
+        "level": "ok"
+      },
+      {
+        "key": "short_ratio",
+        "label": "碎句轰炸·≤6字句占比",
+        "value": 0.3547,
+        "points": 2.2,
+        "level": "bad"
+      },
+      {
+        "key": "turn_new_info",
+        "label": "信息密度·对话'给新信息'轮占比",
+        "value": 0.4404,
+        "points": 1.3,
+        "level": "ok"
+      },
+      {
+        "key": "epithet_per_1k",
+        "label": "代称滥用·少年/汉子/老者…(次/千字)",
+        "value": 1.114,
+        "points": 0.7,
+        "level": "ok"
+      },
+      {
+        "key": "de_per_100",
+        "label": "定语堆叠·'的'字密度",
+        "value": 2.0971,
+        "points": 0.2,
+        "level": "ok"
+      },
+      {
+        "key": "de_triple_per_1k",
+        "label": "定语堆叠·'的…的…的'三连(处/千字)",
+        "value": 0.0,
+        "points": 0.0,
+        "level": "ok"
+      },
+      {
+        "key": "sent_ge3de_ratio",
+        "label": "定语堆叠·单句≥3个'的'占比",
+        "value": 0.0064,
+        "points": 0.0,
+        "level": "ok"
+      },
+      {
+        "key": "open_runs_per_1k",
+        "label": "句首雷同·连续≥3句同头(段/千字)",
+        "value": 0.0944,
+        "points": 0.0,
+        "level": "ok"
+      },
+      {
+        "key": "action_phr_per_1k",
+        "label": "动作复读·≥3次重复短语(个/千字)",
+        "value": 0.3392,
+        "points": 0.0,
+        "level": "ok"
+      },
+      {
+        "key": "explain_ratio",
+        "label": "解释过载·解释句占比(叙事句)",
+        "value": 0.0009,
+        "points": 0.0,
+        "level": "ok"
+      },
+      {
+        "key": "long_sent_ratio",
+        "label": "长句·单句≥35字占比",
+        "value": 0.0228,
+        "points": 0.0,
+        "level": "ok"
+      },
+      {
+        "key": "new_name_per_300",
+        "label": "信息密度·每300字新增专名数",
+        "value": 0.7672,
+        "points": 0.0,
+        "level": "ok"
+      },
+      {
+        "key": "comma_chain_ratio",
+        "label": "逗号链·单句≥4逗号占比[辅助]",
+        "value": 0.0298,
+        "points": 0.0,
+        "level": "ok"
+      }
+    ]
+  },
+  "B": {
+    "chars": 3007,
+    "sentences": 165,
+    "avg_sent": 18.2,
+    "score": 75.3,
+    "grade": "尚可",
+    "penalty": 24.7,
+    "alt_score": 75.8,
+    "alt_grade": "尚可",
+    "values": {
+      "de_per_100": 2.49,
+      "de_triple_per_1k": 0.0,
+      "sent_ge3de_ratio": 0.0303,
+      "static_ratio": 0.0303,
+      "short_runs_per_1k": 0.0,
+      "short_ratio": 0.2182,
+      "open_runs_per_1k": 0.0,
+      "epithet_per_1k": 9.31,
+      "action_phr_per_1k": 0.0,
+      "explain_ratio": 0.0364,
+      "long_sent_ratio": 0.1879,
+      "micro_action_ratio": 0.0,
+      "new_name_per_300": 0.6,
+      "turn_new_info": 0.7097,
+      "comma_chain_ratio": 0.0061
+    },
+    "penalty_detail": [
+      {
+        "key": "long_sent_ratio",
+        "label": "长句·单句≥35字占比",
+        "value": 0.1879,
+        "points": 12.0,
+        "level": "bad"
+      },
+      {
+        "key": "epithet_per_1k",
+        "label": "代称滥用·少年/汉子/老者…(次/千字)",
+        "value": 9.31,
+        "points": 5.0,
+        "level": "bad"
+      },
+      {
+        "key": "explain_ratio",
+        "label": "解释过载·解释句占比(叙事句)",
+        "value": 0.0364,
+        "points": 4.0,
+        "level": "ok"
+      },
+      {
+        "key": "de_per_100",
+        "label": "定语堆叠·'的'字密度",
+        "value": 2.49,
+        "points": 1.2,
+        "level": "ok"
+      },
+      {
+        "key": "static_ratio",
+        "label": "无关细节·纯静物/环境句占比",
+        "value": 0.0303,
+        "points": 1.2,
+        "level": "ok"
+      },
+      {
+        "key": "sent_ge3de_ratio",
+        "label": "定语堆叠·单句≥3个'的'占比",
+        "value": 0.0303,
+        "points": 0.9,
+        "level": "ok"
+      },
+      {
+        "key": "short_ratio",
+        "label": "碎句轰炸·≤6字句占比",
+        "value": 0.2182,
+        "points": 0.5,
+        "level": "ok"
+      },
+      {
+        "key": "de_triple_per_1k",
+        "label": "定语堆叠·'的…的…的'三连(处/千字)",
+        "value": 0.0,
+        "points": 0.0,
+        "level": "ok"
+      },
+      {
+        "key": "short_runs_per_1k",
+        "label": "碎句轰炸·连续≥3句≤6字(段/千字)",
+        "value": 0.0,
+        "points": 0.0,
+        "level": "ok"
+      },
+      {
+        "key": "open_runs_per_1k",
+        "label": "句首雷同·连续≥3句同头(段/千字)",
+        "value": 0.0,
+        "points": 0.0,
+        "level": "ok"
+      },
+      {
+        "key": "action_phr_per_1k",
+        "label": "动作复读·≥3次重复短语(个/千字)",
+        "value": 0.0,
+        "points": 0.0,
+        "level": "ok"
+      },
+      {
+        "key": "micro_action_ratio",
+        "label": "描述过重·碎动作链句占比",
+        "value": 0.0,
+        "points": 0.0,
+        "level": "ok"
+      },
+      {
+        "key": "new_name_per_300",
+        "label": "信息密度·每300字新增专名数",
+        "value": 0.6,
+        "points": 0.0,
+        "level": "ok"
+      },
+      {
+        "key": "turn_new_info",
+        "label": "信息密度·对话'给新信息'轮占比",
+        "value": 0.7097,
+        "points": 0.0,
+        "level": "ok"
+      },
+      {
+        "key": "comma_chain_ratio",
+        "label": "逗号链·单句≥4逗号占比[辅助]",
+        "value": 0.0061,
+        "points": 0.0,
+        "level": "ok"
+      }
+    ]
+  },
+  "C": {
+    "chars": 1560,
+    "sentences": 97,
+    "avg_sent": 16.1,
+    "score": 88.1,
+    "grade": "易读",
+    "penalty": 11.9,
+    "alt_score": 88.1,
+    "alt_grade": "易读",
+    "values": {
+      "de_per_100": 3.46,
+      "de_triple_per_1k": 0.0,
+      "sent_ge3de_ratio": 0.0103,
+      "static_ratio": 0.0619,
+      "short_runs_per_1k": 0.0,
+      "short_ratio": 0.1546,
+      "open_runs_per_1k": 0.0,
+      "epithet_per_1k": 0.0,
+      "action_phr_per_1k": 0.0,
+      "explain_ratio": 0.0206,
+      "long_sent_ratio": 0.0825,
+      "micro_action_ratio": 0.0,
+      "new_name_per_300": 1.8,
+      "turn_new_info": 0.84,
+      "comma_chain_ratio": 0.0
+    },
+    "penalty_detail": [
+      {
+        "key": "static_ratio",
+        "label": "无关细节·纯静物/环境句占比",
+        "value": 0.0619,
+        "points": 5.0,
+        "level": "warn"
+      },
+      {
+        "key": "de_per_100",
+        "label": "定语堆叠·'的'字密度",
+        "value": 3.46,
+        "points": 3.5,
+        "level": "warn"
+      },
+      {
+        "key": "new_name_per_300",
+        "label": "信息密度·每300字新增专名数",
+        "value": 1.8,
+        "points": 2.0,
+        "level": "ok"
+      },
+      {
+        "key": "explain_ratio",
+        "label": "解释过载·解释句占比(叙事句)",
+        "value": 0.0206,
+        "points": 1.0,
+        "level": "ok"
+      },
+      {
+        "key": "long_sent_ratio",
+        "label": "长句·单句≥35字占比",
+        "value": 0.0825,
+        "points": 0.3,
+        "level": "ok"
+      },
+      {
+        "key": "de_triple_per_1k",
+        "label": "定语堆叠·'的…的…的'三连(处/千字)",
+        "value": 0.0,
+        "points": 0.0,
+        "level": "ok"
+      },
+      {
+        "key": "sent_ge3de_ratio",
+        "label": "定语堆叠·单句≥3个'的'占比",
+        "value": 0.0103,
+        "points": 0.0,
+        "level": "ok"
+      },
+      {
+        "key": "short_runs_per_1k",
+        "label": "碎句轰炸·连续≥3句≤6字(段/千字)",
+        "value": 0.0,
+        "points": 0.0,
+        "level": "ok"
+      },
+      {
+        "key": "short_ratio",
+        "label": "碎句轰炸·≤6字句占比",
+        "value": 0.1546,
+        "points": 0.0,
+        "level": "ok"
+      },
+      {
+        "key": "open_runs_per_1k",
+        "label": "句首雷同·连续≥3句同头(段/千字)",
+        "value": 0.0,
+        "points": 0.0,
+        "level": "ok"
+      },
+      {
+        "key": "epithet_per_1k",
+        "label": "代称滥用·少年/汉子/老者…(次/千字)",
+        "value": 0.0,
+        "points": 0.0,
+        "level": "ok"
+      },
+      {
+        "key": "action_phr_per_1k",
+        "label": "动作复读·≥3次重复短语(个/千字)",
+        "value": 0.0,
+        "points": 0.0,
+        "level": "ok"
+      },
+      {
+        "key": "micro_action_ratio",
+        "label": "描述过重·碎动作链句占比",
+        "value": 0.0,
+        "points": 0.0,
+        "level": "ok"
+      },
+      {
+        "key": "turn_new_info",
+        "label": "信息密度·对话'给新信息'轮占比",
+        "value": 0.84,
+        "points": 0.0,
+        "level": "ok"
+      },
+      {
+        "key": "comma_chain_ratio",
+        "label": "逗号链·单句≥4逗号占比[辅助]",
+        "value": 0.0,
+        "points": 0.0,
+        "level": "ok"
+      }
+    ]
+  },
+  "D": {
+    "chars": 2044,
+    "sentences": 271,
+    "avg_sent": 7.5,
+    "score": 65.4,
+    "grade": "尚可",
+    "penalty": 34.6,
+    "alt_score": 69.6,
+    "alt_grade": "尚可",
+    "values": {
+      "de_per_100": 2.3,
+      "de_triple_per_1k": 0.0,
+      "sent_ge3de_ratio": 0.0,
+      "static_ratio": 0.1181,
+      "short_runs_per_1k": 12.23,
+      "short_ratio": 0.6162,
+      "open_runs_per_1k": 0.98,
+      "epithet_per_1k": 0.0,
+      "action_phr_per_1k": 0.98,
+      "explain_ratio": 0.0,
+      "long_sent_ratio": 0.0,
+      "micro_action_ratio": 0.0775,
+      "new_name_per_300": 0.17,
+      "turn_new_info": 0.1667,
+      "comma_chain_ratio": 0.0
+    },
+    "penalty_detail": [
+      {
+        "key": "static_ratio",
+        "label": "无关细节·纯静物/环境句占比",
+        "value": 0.1181,
+        "points": 11.8,
+        "level": "bad"
+      },
+      {
+        "key": "short_runs_per_1k",
+        "label": "碎句轰炸·连续≥3句≤6字(段/千字)",
+        "value": 12.23,
+        "points": 6.0,
+        "level": "bad"
+      },
+      {
+        "key": "turn_new_info",
+        "label": "信息密度·对话'给新信息'轮占比",
+        "value": 0.1667,
+        "points": 6.0,
+        "level": "bad"
+      },
+      {
+        "key": "open_runs_per_1k",
+        "label": "句首雷同·连续≥3句同头(段/千字)",
+        "value": 0.98,
+        "points": 3.5,
+        "level": "warn"
+      },
+      {
+        "key": "new_name_per_300",
+        "label": "信息密度·每300字新增专名数",
+        "value": 0.17,
+        "points": 3.1,
+        "level": "warn"
+      },
+      {
+        "key": "short_ratio",
+        "label": "碎句轰炸·≤6字句占比",
+        "value": 0.6162,
+        "points": 3.0,
+        "level": "bad"
+      },
+      {
+        "key": "de_per_100",
+        "label": "定语堆叠·'的'字密度",
+        "value": 2.3,
+        "points": 0.7,
+        "level": "ok"
+      },
+      {
+        "key": "micro_action_ratio",
+        "label": "描述过重·碎动作链句占比",
+        "value": 0.0775,
+        "points": 0.5,
+        "level": "ok"
+      },
+      {
+        "key": "de_triple_per_1k",
+        "label": "定语堆叠·'的…的…的'三连(处/千字)",
+        "value": 0.0,
+        "points": 0.0,
+        "level": "ok"
+      },
+      {
+        "key": "sent_ge3de_ratio",
+        "label": "定语堆叠·单句≥3个'的'占比",
+        "value": 0.0,
+        "points": 0.0,
+        "level": "ok"
+      },
+      {
+        "key": "epithet_per_1k",
+        "label": "代称滥用·少年/汉子/老者…(次/千字)",
+        "value": 0.0,
+        "points": 0.0,
+        "level": "ok"
+      },
+      {
+        "key": "action_phr_per_1k",
+        "label": "动作复读·≥3次重复短语(个/千字)",
+        "value": 0.98,
+        "points": 0.0,
+        "level": "ok"
+      },
+      {
+        "key": "explain_ratio",
+        "label": "解释过载·解释句占比(叙事句)",
+        "value": 0.0,
+        "points": 0.0,
+        "level": "ok"
+      },
+      {
+        "key": "long_sent_ratio",
+        "label": "长句·单句≥35字占比",
+        "value": 0.0,
+        "points": 0.0,
+        "level": "ok"
+      },
+      {
+        "key": "comma_chain_ratio",
+        "label": "逗号链·单句≥4逗号占比[辅助]",
+        "value": 0.0,
+        "points": 0.0,
+        "level": "ok"
+      }
+    ]
+  }
+}

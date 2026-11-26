@@ -1,0 +1,36 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.venv/
+venv/
+
+# Secrets & local env
+.env
+*.env
+
+# Logs & temporary staging
+*.log
+.gh-pages-tmp/
+
+# Large deterministic / live-runtime outputs (rebuild via src/outline.py & src/runner.py)
+out/outline_full.json
+out/seeds.json
+out/dashboard_data.json
+out/progress.json
+out/sijie/
+out/books/
+out/books_demo/
+out/bench/
+out/sweep/
+out/test_books/
+out/v2/
+out/_verify/
+out/longform/
+out/world.json
+out/cast.json
+out/demo_bible.json
+out/div_demo.json
+out/div_demo.md
+out/judge/raw_*.json

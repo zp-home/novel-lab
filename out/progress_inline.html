@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>四界 · 正文生成进度</title>
+<style>
+:root{
+  --bg:#080b12;--panel:#111827;--panel2:#151d2e;--line:#1e293b;
+  --txt:#cbd5e1;--txt2:#94a3b8;--dim:#64748b;
+  --cyan:#22d3ee;--emerald:#34d399;--amber:#fbbf24;--rose:#fb7185;
+  --violet:#a78bfa;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--txt);
+  font-family:-apple-system,"Segoe UI","Microsoft YaHei",sans-serif;
+  font-size:13px;line-height:1.6}
+.wrap{max-width:1560px;margin:0 auto;padding:20px 24px 60px}
+
+header{display:flex;align-items:flex-end;justify-content:space-between;
+  gap:20px;padding-bottom:16px;margin-bottom:18px;
+  border-bottom:1px solid var(--line);flex-wrap:wrap}
+h1{font-size:20px;font-weight:600;color:#e2e8f0;letter-spacing:.5px}
+h1 span{color:var(--cyan)}
+.sub{color:var(--dim);font-size:12px;margin-top:3px}
+.kpis{display:flex;gap:26px;flex-wrap:wrap}
+.kpi{text-align:right}
+.kpi .v{font-size:22px;font-weight:600;color:var(--cyan);
+  font-variant-numeric:tabular-nums;line-height:1.1}
+.kpi .l{font-size:10.5px;color:var(--dim);letter-spacing:.4px}
+
+.panel{background:linear-gradient(180deg,var(--panel),var(--panel2));
+  border:1px solid var(--line);border-radius:10px;padding:16px 18px;
+  margin-bottom:14px;position:relative}
+.panel::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,transparent,#2a3a52,transparent)}
+.panel h2{font-size:13px;font-weight:600;color:#e2e8f0;margin-bottom:4px;
+  display:flex;align-items:center;gap:8px}
+.panel h2 .tag{font-size:9.5px;padding:1px 6px;border-radius:3px;
+  background:rgba(34,211,238,.12);color:var(--cyan);letter-spacing:.3px}
+.note{font-size:11px;color:var(--dim);margin-bottom:12px}
+
+/* 进度条 */
+.prog{height:26px;background:rgba(30,41,59,.6);border-radius:6px;
+  overflow:hidden;position:relative;margin:10px 0 6px}
+.prog .fill{height:100%;background:linear-gradient(90deg,#0891b2,#22d3ee);
+  transition:width .6s ease;position:relative}
+.prog .fill::after{content:'';position:absolute;inset:0;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.18),transparent);
+  animation:shim 2.2s infinite}
+@keyframes shim{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}
+.prog .lbl{position:absolute;inset:0;display:flex;align-items:center;
+  justify-content:center;font-size:11.5px;font-weight:600;
+  color:#e2e8f0;text-shadow:0 1px 3px rgba(0,0,0,.7);
+  font-variant-numeric:tabular-nums}
+
+/* 幕进度 */
+.actbars{display:flex;gap:6px;margin-top:12px;flex-wrap:wrap}
+.actbar{flex:1;min-width:120px}
+.actbar .nm{font-size:10px;color:var(--dim);margin-bottom:3px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.actbar .tr{height:6px;background:rgba(30,41,59,.8);border-radius:3px;
+  overflow:hidden}
+.actbar .tr div{height:100%;background:var(--cyan);transition:width .5s}
+.actbar .ct{font-size:9.5px;color:var(--txt2);margin-top:2px;
+  font-variant-numeric:tabular-nums}
+
+/* 章节网格 */
+.chgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(52px,1fr));
+  gap:5px;margin-top:8px}
+.ch{aspect-ratio:1;border-radius:4px;display:flex;align-items:center;
+  justify-content:center;font-size:10px;font-variant-numeric:tabular-nums;
+  cursor:pointer;transition:.15s;border:1px solid transparent;
+  color:#0b1220;font-weight:600}
+.ch.done{background:linear-gradient(135deg,#0d9488,#22d3ee)}
+.ch.warn{background:linear-gradient(135deg,#b45309,#fbbf24)}
+.ch.bad{background:linear-gradient(135deg,#9f1239,#fb7185)}
+.ch.todo{background:rgba(30,41,59,.6);color:var(--dim);font-weight:400}
+.ch:hover{transform:scale(1.15);border-color:#fff;z-index:2}
+
+/* 预览 */
+.preview{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:10px}
+@media(max-width:1000px){.preview{grid-template-columns:1fr}}
+.prevbox{background:#060910;border:1px solid var(--line);border-radius:8px;
+  padding:12px 14px;font-size:12px;line-height:1.85;color:#a8bdd9;
+  max-height:340px;overflow:auto;white-space:pre-wrap}
+.prevbox .hd{font-size:10.5px;color:var(--dim);margin-bottom:8px;
+  padding-bottom:6px;border-bottom:1px solid var(--line);
+  display:flex;justify-content:space-between;gap:10px}
+.prevbox .hd b{color:var(--cyan);font-weight:500}
+
+/* 表格 */
+table{width:100%;border-collapse:collapse;font-size:11px}
+th{text-align:left;padding:6px 9px;color:var(--dim);font-weight:500;
+  border-bottom:1px solid var(--line);font-size:10px;
+  text-transform:uppercase;letter-spacing:.4px;position:sticky;top:0;
+  background:var(--panel)}
+td{padding:5px 9px;border-bottom:1px solid rgba(30,41,59,.5);
+  color:var(--txt2);font-variant-numeric:tabular-nums}
+tr:hover td{background:rgba(34,211,238,.05)}
+td.mono{font-family:ui-monospace,monospace;font-size:10.5px}
+.tblwrap{max-height:420px;overflow:auto}
+
+.pill{display:inline-block;padding:1px 6px;border-radius:3px;font-size:9.5px}
+.pill.ok{background:rgba(52,211,153,.15);color:var(--emerald)}
+.pill.warn{background:rgba(251,191,36,.15);color:var(--amber)}
+.pill.bad{background:rgba(251,113,133,.18);color:var(--rose)}
+
+::-webkit-scrollbar{width:7px;height:7px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:#2a3a52;border-radius:4px}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <div>
+    <h1>四界 · <span>正文生成进度</span></h1>
+    <div class="sub" id="sub">加载中…</div>
+  </div>
+  <div class="kpis">
+    <div class="kpi"><div class="v" id="kGen">—</div><div class="l">已写章数</div></div>
+    <div class="kpi"><div class="v" id="kPct">—</div><div class="l">完成度</div></div>
+    <div class="kpi"><div class="v" id="kChars">—</div><div class="l">总字数</div></div>
+    <div class="kpi"><div class="v" id="kAvg">—</div><div class="l">平均字/章</div></div>
+    <div class="kpi"><div class="v" id="kBad">—</div><div class="l">质量告警</div></div>
+  </div>
+</header>
+
+<div class="panel">
+  <h2>生成进度 <span class="tag">live</span></h2>
+  <div class="prog"><div class="fill" id="fill" style="width:0%"></div>
+    <div class="lbl" id="proglbl">0 / 200</div></div>
+  <div class="actbars" id="actbars"></div>
+</div>
+
+<div class="panel">
+  <h2>章节网格 <span class="tag">1 ~ 200</span></h2>
+  <div class="note">绿色=完成且合格｜黄色=字数偏少｜红色=英文/套话超标｜灰色=未写</div>
+  <div class="chgrid" id="chgrid"></div>
+</div>
+
+<div class="panel">
+  <h2>正文预览 <span class="tag">最新章节</span></h2>
+  <div class="preview">
+    <div class="prevbox"><div class="hd"><span>开头</span><b id="ph1">—</b></div>
+      <div id="p1">—</div></div>
+    <div class="prevbox"><div class="hd"><span>结尾</span><b id="ph2">—</b></div>
+      <div id="p2">—</div></div>
+  </div>
+</div>
+
+<div class="panel">
+  <h2>章节明细 <span class="tag">质量检测</span></h2>
+  <div class="tblwrap">
+    <table>
+      <thead><tr><th>章</th><th>标题</th><th>境界</th><th>字数</th>
+        <th>英文</th><th>套话</th><th>状态</th><th>幕 / 卷</th></tr></thead>
+      <tbody id="tbody"></tbody>
+    </table>
+  </div>
+</div>
+</div>
+
+<script>
+let DATA = {"generated": 16, "target": 200, "total_chars": 61432, "avg": 3840, "updated": "2026-11-25 12:14:03", "chapters": [{"no": 1, "chars": 4122, "english": 0, "banned": 0, "title": "碑印辞二", "level": "炼气初期", "act": "第一幕 · 铁匠之子", "volume": "第1卷 · 人界·痕镜", "head": "灯芯爆了一声。铜镜搁在条案上，镜面朝上，边角磕掉了一块漆。沈鹤年站在案前，左手按着镜面，五根指头摊开，指节压着镜钮旁边的裂纹。屋里七八双眼睛都盯着那只手。“沈师傅，”对面穿灰袄的老者往前探了探身子，“这镜子——”“你说呢。”沈鹤年没抬眼。他右手里捏着一根竹签，正在剔灯芯上的焦灰，剔一下，火苗跳一下。灯挂在梁下垂下来的铁钩上，光从上面罩下来，把他手背上的青筋照得发白。林昭靠在门框上，肩膀抵着门板。漆皮掉了大半，露出灰白的木头茬子。他手里攥着半块干饼，没吃。饼渣掉在门槛上，被风吹散了。林小满蹲在条案另一头，两手抄在袖筒", "tail": "那铜镜到底押了几家？”“两家。”“两家都押了？”“嗯。”“那赎回来得多少钱？”林昭没答。雪更密了，灯笼光缩成拳头大的一团。崖边的路窄，只容一人走。林昭在前面，灯笼光贴着崖壁晃。林小满在后面，锈刀在怀里硌着肋骨。“哥。”“嗯。”“那账本你收好了？”“收了。”“别又弄丢了。”“嗯。”崖边的路终究还长，林小满把一把锈刀揣好。"}, {"no": 2, "chars": 3526, "english": 0, "banned": 0, "title": "影坝传下", "level": "炼气初期", "act": "第一幕 · 铁匠之子", "volume": "第1卷 · 人界·痕镜", "head": "屋顶第三根椽条响了一声，像谁拿指甲刮瓦。林昭站在门槛内侧，左手三指扣着一片瓦。那片瓦从他指缝里滑出去的时候，他右手正按在门框上——旧屋的木框歪了两寸，关不严，合不上，他每天早晨都要推一下。“哥你甭推了。”林小满蹲在灶台边，拿火钳拨一堆灰，“推了也白推。”林昭没吭声。他低头看地上。那片碎瓦落在青砖缝里，磕掉一个角。原来缺的那块在檐口，是去年秋天掉下来的，掉在腌菜缸盖上，砸出一道白印。缸还在，盖没了。沈鹤年坐在堂屋靠里的竹椅上。竹椅比门槛矮一截，他膝盖搁着一把蒲扇，扇面上有茶渍。他眼皮抬了抬。“瓦呢？”“掉了。”林昭说", "tail": "纹。风一吹，纸角翻回去，又翻过来。他抬起脚，一脚踏上船板。船晃了一下，他蹲下来抓住船舷，手指头扣进船板缝里，指甲盖泛白。叼纸烟的那个人把竹竿往栈桥桩子上一顶，船离了岸。水声漫上来，船底擦过河床，又浮起来。渡口越来越远，石阶上那几个人蹲回去的蹲回去，挑担子的把扁担又上了肩。斗笠压低了。林小满还是没有回头，半张契还在崖边。"}, {"no": 3, "chars": 3221, "english": 0, "banned": 0, "title": "归痂誓断", "level": "炼气初期", "act": "第一幕 · 铁匠之子", "volume": "第1卷 · 人界·痕镜", "head": "祠堂的门槛被踩断了一截，断口露出白茬，踩上去吱嘎一声。门板歪着，合不严，风从缝里灌进来，供桌上的香灰被吹起一层，又落回原处，落在三碗凉透的供饭上。饭粒硬得发亮，冻成一整块。供桌正中间摆着香炉，炉耳缺了一个角，里头插着三根没点过的香，香脚被虫蛀了，掉了一桌碎末。林小满一脚跨过去，鞋底的雪泥在青砖上蹭出三道黑印。她手里攥着半张纸，边角烧过，指头捏得发白。祠堂里没点灯，就靠门外雪地的反光，把她的脸照得发青。“哥，你让开。”林昭没让。他站在供桌前，背后是祖宗牌位，身前是林小满举着的那半张契。契纸发黄，折痕处快断了，上半截的", "tail": "出里面发黑的木柄。刀身上锈成一片褐红，刀刃崩了个豁口，豁口里嵌着干泥。刀尖指着门，像有人搁在那儿就没再动过。他蹲下来。手伸到刀柄上，指头碰到麻布，麻布碎了，渣子掉在灰里。他把手收回来。手腕上的麻绳没解，绳头垂在地上，沾了灰。他蹲着。门缝里漏进来一道雪光，照在刀上，锈色发暗。刀柄上的碎麻布渣沾在指头上，他搓了搓，没搓掉。"}, {"no": 4, "chars": 3563, "english": 0, "banned": 0, "title": "茧药笺残", "level": "炼气初期", "act": "第一幕 · 铁匠之子", "volume": "第1卷 · 人界·痕镜", "head": "崖边的风从下往上灌，把林小满的衣角掀起来拍在他脸上。风从崖底带着哨音往上钻，哨音里夹着碎石滚动的声音。他呸了一口沙子，侧过身，脚底踩碎一块干泥。“走慢些，哥。”林昭没回头，脚没停。崖边的碎石在他鞋跟后面滚了两颗下去，很久才听到落底的声音。沈鹤年走在最前面，背着手，步子不快不慢。他脚边是一道裂缝，从崖沿往里裂了三四尺，缝里嵌着半块青瓦，瓦沿还带着一截干透的泥灰，明显是从上面什么地方被掀下来的。沈鹤年停住了。他弯腰，右手按在瓦面上，手掌一覆，五指收拢，把整块碎瓦罩在掌心底下。他按得不重，但瓦块严丝合缝地贴在裂缝上，连风", "tail": "着。”沈鹤年把旧印揣回怀里，拍了拍胸口。他站起来，凳子腿在泥地上蹭出两道印子。林昭已经走到门口了，林小满跟在他后头，把那只伤手揣进怀里捂着。沈鹤年最后一个出门，顺手把门板带上。雪还在下，巷子里的脚印已经被新雪盖了一半。他走在最后面，步子慢，手伸进怀里摸了一下那枚旧印，又摸了一下。旧屋的路还是还长，沈鹤年把一枚旧印揣好。"}, {"no": 5, "chars": 3700, "english": 0, "banned": 0, "title": "债锤契十", "level": "炼气初期", "act": "第一幕 · 铁匠之子", "volume": "第1卷 · 人界·痕镜", "head": "祠堂的香案上，三根香烧到了根，灰柱子断成两截，倒进炉子里，腾起一小蓬灰，呛得林昭偏了一下头。林小满从门槛外跨进来，脚底带起一股潮泥味。她手里攥着块东西，指节发白，手背上的青筋鼓着。供桌摆了三碗冷饭。饭粒发硬，结了一层薄皮。沈鹤年坐在左边蒲团上，木珠子在指间一颗一颗滑过去，响得匀。林昭靠门框站着，一只手插在袖筒里，日头从他肩膀斜过去，在砖地上切出一道光，光里飘着香灰末子。林小满走到供桌前，把手里那东西往桌上一搁。铜镜。背面缠枝纹里嵌着陈年垢，镜面磨得发亮，映出香炉里三点暗红。镜钮上缠着红绳，绳头散开，起了毛，搭在供桌", "tail": "上的土，走到门口，站在门槛上往外看。日头偏西了，光从门框里斜进来，照在他脸上，照出颧骨底下一道深沟。沈鹤年抹了把脸。手掌从额头往下撸，撸过眼睛，撸过嘴，在手根上停了一下。手心上的泥蹭在脸上，留下几道印子。他走回墙根，蹲下去，把铜镜塞进墙缝里。缝窄，塞到一半卡住了。他用指头往里捅了两下，捅进去了，又抠了块泥巴糊上，抹平。"}, {"no": 6, "chars": 3558, "english": 0, "banned": 0, "title": "痕锤檄前", "level": "炼气初期", "act": "第一幕 · 铁匠之子", "volume": "第1卷 · 人界·痕镜", "head": "灯花爆了一声。沈鹤年拿筷子拨灯芯。火苗矮下去，屋里暗了三分。桌上摊着烧焦的账本，边角卷起来，炭化的纸页一碰就碎。他的手停在封皮上方，没有落下去。林小满蹲在门槛上剥花生。壳扔了一地。“哥，他到底看不看？”林昭靠在门框上，没应声。屋外雪停了，风还在。旧屋的梁上往下掉灰。细粉落在账本面上，沈鹤年用嘴吹开，没伸手擦。“沈师父。”林小满把花生壳攥成一团，“你要看就翻。不翻就收起来，这么搁着，灯油不要钱？”沈鹤年没答，把筷子搁回灯盏沿上。油在筷头上积了一滴，落下来，洇湿账本一角。他拿袖口按上去，吸干了。袖子上留了块黑印。林昭开", "tail": "？”“没有。”“刘家的瓦，你烧了，刘家的人认了没有？”林昭没答。沈鹤年把账本合上。他站起来。椅子腿刮过地面。他把账本往袖子里一收。袖口拢了两下。账本贴着胳膊，鼓出一块方方正正的棱角。他朝院门走。经过林昭身边时停了一步。雪从门缝里钻进来。落在门槛上。化了一层湿印。他迈出院门，脚踩进雪里。从旧屋到院门，他没往雪地里看一眼。"}, {"no": 7, "chars": 4019, "english": 0, "banned": 0, "title": "隙药笺前", "level": "炼气初期", "act": "第一幕 · 铁匠之子", "volume": "第1卷 · 人界·痕镜", "head": "橹把撞上船帮，咚一声。渡口的跳板跟着抖。林昭站在石阶最下一级，鞋边全是湿泥。林小满蹲在缆桩旁，手里捏着半块冷饼，饼渣掉在跳板上。沈鹤年坐在船尾，膝头摊一张破网，梭子从网眼里穿过去，沙沙响。林昭从袖口里抽出那张纸。纸折了三折，边角发硬，中间一道折缝快磨破了。他把纸放在缆桩平面上。纸没压住，风一翻，翘起来。林昭用食指按住上角。林小满抬头。饼往跳板上一搁，伸手就压。掌心盖住纸面，五指张开，把折缝全遮了。“哥。”林小满说，“你别管。”林昭没抽手。两根手指还压在纸角上。林小满的手背压着他的指背。两个人隔着一张纸较劲。缆桩上的", "tail": "昭说。沈鹤年把烟锅别回去，从船头走过来。鞋底在船板上蹭出两道水痕。他站在信原来放的地方，低头看船板上的湿印子。“信在怀里，人在渡口。”沈鹤年说。“你说呢。”没人答他。风把旧绳拍在木桩上，啪。啪。天暗下去。渡口边上的灯亮了一盏，光是黄的，照不远。灯芯短了，火苗跳了一下，暗下去又亮起来。灯下的路先还长，林昭把一块碎瓦揣好。"}, {"no": 8, "chars": 3673, "english": 0, "banned": 0, "title": "渡印简断", "level": "炼气初期", "act": "第一幕 · 铁匠之子", "volume": "第1卷 · 人界·痕镜", "head": "祠堂门轴响了一声。木门推开，撞在墙垛上，弹回来半尺。门板上刷的桐油味还没散尽，混着香灰的潮气。门槛里头有三个人。沈鹤年坐在供桌左边的旧圈椅上，膝头搭着一条灰布巾。林昭站在他身后两步，手垂着，指节上有干了的泥。林小满跨进来。鞋底蹭过青砖，停在香案前。他鼻子里哼了一声，眼睛盯着那块布。供桌上摆着那块布。白粗布，巴掌宽，上头洇着暗红。布角卷起来，压在一只粗陶碗底下。碗里还有半碗冷茶，茶面上浮着灰。布上有一股铁腥气。林小满伸手就把碗挪开，两根手指捏住布角往外抽。布和桌面粘了一下，撕开时带出一声轻响。他把布团成一把，塞进袖口", "tail": "间，灰布巾在背上晃荡。林小满在最后面。过巷子口的时候，步子慢了半拍。祠堂门口亮着灯。灯笼挂在门廊底下，两个人蹲在台阶上抽烟，看见他们过来，站起来了。林小满没抬头。他跟着林昭从祠堂门口走过去，步子迈得快了些。袖口底下露出一截暗红色，边上发黑。林昭没停。沈鹤年也没停。林小满把带血的布收进袖子里，当着所有人的面没看祠堂一眼。"}, {"no": 9, "chars": 3464, "english": 0, "banned": 0, "title": "债函赋下", "level": "炼气初期", "act": "第一幕 · 铁匠之子", "volume": "第1卷 · 人界·痕镜", "head": "门轴响了一声，拖得老长。林小满侧身挤进旧屋，脚底踩到碎瓦，咯吱。他骂了句什么，低头看鞋底，瓦片嵌进草鞋缝里，抠了两下没抠出来。屋角的稻草堆塌了半边，底下露出一口缺角的木箱，箱盖歪着，半截埋在烂棉絮里。西墙的窗户只剩个框，风从破洞灌进来，带着隔壁猪圈沤肥的酸臭味。灶台上落满碎瓦和鸟粪，锅底锈穿了个洞，能看见底下的土。沈鹤年靠在门框外头，没进来。他手里捏着根旱烟杆，烟锅朝下在门槛上磕了磕，磕出一点灰。林昭从林小满身后绕过去，走到木箱前，弯腰。“你别动。”林小满抢上一步，伸手把箱底一块布拽出来。布是靛蓝的，原先大概包着什", "tail": "他在墙根蹲了一会儿，烟锅在鞋底上磕了磕，站起来，进了祠堂。供桌上的牌位还歪着几个，香炉里的灰被风吹起来一层，落在供桌边上。他走到门槛跟前，蹲下去，手指头在泥里抠了两下，抠出一块碎瓦片，是供桌角上崩下来的，边上还带着半截榫头。他把碎瓦在袖子上蹭了蹭泥，翻过来看了看背面，折了折，揣进了内兜。然后他出了祠堂，顺手把门带上了。"}, {"no": 10, "chars": 3408, "english": 0, "banned": 0, "title": "茧薪书半", "level": "炼气初期", "act": "第一幕 · 铁匠之子", "volume": "第1卷 · 人界·痕镜", "head": "灯芯“啪”地爆了一声，火苗歪进雪里。崖边的风灌过来，灯罩上结了一层白霜。林小满蹲在灯跟前，手从袖筒里抽出来，指头冻得通红。她拿手背蹭了蹭灯罩上的霜，蹭不干净，又拿袖子擦。雪粒子打在铜罩上，叮叮当当地响。“你别擦了，”后头有人喊，“那灯是给死人照路的。”林小满没回头。“你才给死人照路。”她站起来，膝盖嘎巴响了一下。崖边站了七八个人，棉袍子被风吹得贴在身上。沈鹤年蹲在崖边一块平石头上，袖着手，胡子上挂了霜花。林昭站在人群外头，手里攥着根麻绳，绳头上系了个铁钩子，正一下一下往石头上磕。“哥，”林小满喊了一声，“你站那么远", "tail": "刻痕，另一块没有。钩尖刮在瓦面上，吱吱响。“看什么？”沈鹤年问。“没什么。”林昭把钩子别好，站起来，拍膝盖上的雪。林小满走到崖口拐弯的地方了，棉袄后摆一掀一掀，人越来越小。风从崖底下上来，卷着雪粒子打在脸上。雪粒子打在瓦面上，沙沙响，跟撒盐似的。沈鹤年画的圈里，三块碎瓦搁着，最大那块翘着一个角。没人去捡。林昭站着没动。"}, {"no": 11, "chars": 3408, "english": 0, "banned": 0, "title": "井河志上", "level": "炼气初期", "act": "第一幕 · 铁匠之子", "volume": "第1卷 · 人界·痕镜", "head": "沈鹤年的指甲挑开第一根麻线，麻绳散开的声音很轻，干巴巴的，一声接一声。他蹲在雪地里，膝盖压出一个深坑。手里那截绳子是从扁担上解下来的，三股麻线拧在一起，现在被他一根一根拆开。林昭站在三步外。雪没过脚踝。他肩上落了一层，没拍。林小满在更远些的地方，靠着一块青石，缩着脖子，手揣在袖筒里。她的布鞋湿了半边，脚趾头在里头动。她看见沈鹤年拆绳，嘴张了一下，又合上。“你说呢。”沈鹤年没抬头，对着麻绳说了这三个字。没人接话。林昭看着他的手。沈鹤年的指甲缝里全是黑泥，拆出来的麻丝一缕一缕垂在雪面上，风一吹就散。拆到第三股，绳芯里掉", "tail": "里，走到船头。沈鹤年蹲在船尾，从泥里摸出一枚旧印，在袖子上蹭了蹭，没说话。林小满在岸上喊：“哥，镜子——”林昭没回头。“走。”他跳下船，往崖边走。崖边雪薄，底下是黑石头。他走到崖边，停下。账本在手里，草绳松了。他抬起手，要把账本扔下崖。林小满在身后喊：“哥，那页上有字！”林昭的手一声不响地停在半空，烧焦的账本掉在崖边。"}, {"no": 12, "chars": 3818, "english": 0, "banned": 0, "title": "钉绳册重", "level": "炼气初期", "act": "第一幕 · 铁匠之子", "volume": "第1卷 · 人界·痕镜", "head": "灯芯爆了一声。旧屋的木门半开着，风从门槛底下钻进来，把桌上的信纸吹得翘起一角。林昭坐在桌边，笔尖悬在纸上。沈鹤年蹲在门槛外，手里垂着一截麻绳。林小满从渡口方向跑来，鞋底带泥，一巴掌按在信上。墨迹未干，指缝里立刻洇开一团黑。“哥，你别管。”林小满说。林昭没抬头。笔尖在纸上停着，墨聚成一小点。“写了一半。”林小满把信纸往自己那边拖，纸角刮过桌面，发出细响。“谁让你写的？”沈鹤年把麻绳往膝上绕了一圈。“你说呢？”“我问哥呢。”林小满不看他，手还按着信。“青牛镇写信，得先问家里。你问了吗？”林昭把笔搁下。“嗯。”“嗯啥？”", "tail": "着灯油的烟气。灯芯柱上积了一层黑垢，麻绳绕上去，黑垢蹭在绳上。林小满站在门口，看着灯。“钉不钉？”沈鹤年从腰后摸出铁钉盒，抽了一根，对准灯座底下的木楔，手掌拍上去。钉子进去半截，灯座晃了一下。又是一掌。钉帽平了。灯不晃了。林昭在石阶边上停了一步，看了一眼脚边一块碎瓦。碎瓦内侧有三道刻痕，刻痕里嵌着干泥。他走了。没回头。"}, {"no": 13, "chars": 3590, "english": 0, "banned": 0, "title": "影刀辞六", "level": "炼气初期", "act": "第一幕 · 铁匠之子", "volume": "第1卷 · 人界·痕镜", "head": "灯芯爆了一声，油星子溅在供桌的铜烛台上。林小满把药包往桌上一搁，手还攥着麻绳。沈鹤年的拐杖从桌边横过来，竹节杖头压住药包上的绳结。压得很慢，先碰桌面，再一寸一寸挪到麻绳正中间，停住。“师父，这药潮了。”林小满说，青牛镇口音把“潮”说成“曹”，“你闻闻，都结块了。”沈鹤年没闻。他站在灯下，左手按着药包，右手攥着拐杖。祠堂七盏灯只点了三盏，两盏在东墙牌位前，一盏在他手边。西窗纸破了个角，风钻进来，灯焰歪向供桌，沈鹤年按药的手指动了一下。“过期的药。”林昭说，靠在门槛上，没进来。雪光从他背后映进来，照得他半张脸发白。林小", "tail": "底下。林小满站在门口。“他写了啥？”沈鹤年没答。他从袖里又摸出一样东西，搁在布原来的位置。半块干饼，掰开的，茬口上还沾着芝麻。“明早热了吃。”他说，“别等他。”林小满看着那半块饼，又看香炉底下露出的布角。暗红对着灯，像一片干透的枫叶。雪还在下。院门外那串脚印，被新雪盖了一层，又盖一层。祠堂只剩下带血的布，林昭终究走了。"}, {"no": 14, "chars": 5991, "english": 0, "banned": 3, "title": "井函帖残", "level": "炼气初期", "act": "第一幕 · 铁匠之子", "volume": "第1卷 · 人界·痕镜", "head": "雪粒子打在柴刀背上，沙沙响，像有人往铁皮上撒碎米。林昭蹲在崖边，右手五指扣住刀柄，刀尖朝下，半截刃口埋在雪里。他面前三步远的地方，一根指骨从雪里戳出来，断口参差，白得发灰，骨缝里还夹着冻黑的血丝。风一吹，雪沫子顺着骨面往下滑，留下几道水痕。“哥，你蹲那儿半个时辰了。”林小满缩在背后一棵歪脖子松底下，手抄在袖筒里，脚在雪地上来回跺，“冻死个人了，你倒是吭一声啊。”林昭没回头。“嗯。”沈鹤年站在更靠崖沿的位置，背对着他俩，棉袍下摆被风掀起来又落下去，落下去又掀起来。他手里捏着一根枯枝，在雪面上划拉，不知道画什么。枯枝尖", "tail": "昭已经走出七八步，雪地上留下两行脚印，深一脚浅一脚。林小满把账本往怀里一揣，跟上去。走了十几步，他回头看了一眼。沈鹤年还站在崖边，一只手按着契纸，另一只手垂在身侧。锈刀插在雪里，刀柄歪着，刀身上凝了一层薄冰。雪越下越密，崖边的石头上已经盖了白，只有契纸那四个钉角还露着焦黄的边。林小满看了一眼烧焦的账本，又走了，没回头。"}, {"no": 16, "chars": 3901, "english": 0, "banned": 0, "title": "锈锤谱下", "level": "炼气初期", "act": "第一幕 · 铁匠之子", "volume": "第1卷 · 人界·痕镜", "head": "祠堂的门轴响了一声，又响了一声。风从门缝里挤进来，把供桌上的香灰吹起一层，落在灯盏边上。林小满站在供桌前，脚跟踮着，右手伸到灯焰上方。灯芯烧得偏了，火苗往左歪，眼看要舔到她的手背。“哥，你别管。”她说，青牛镇的口音把“管”字拖得短，“这灯底下压着东西，我摸到了。”林昭没应声。他从侧边走过来，步子不快，鞋底在青砖上蹭出两道干响。他抬手，掌心朝下，直接扣在灯盏上。火苗被压得贴住油面，黄光缩成一条线。灯油从盏沿漫出来，顺着铜壁往下淌，滴在供桌的漆面上，滋了一声，冒起一股焦油味。林小满的手停在半空。她的指尖离林昭的手背只有", "tail": "拿走了。”林昭说。沈鹤年没应。他用红布条把药篓的提手缠了一圈，缠得慢，布条尾子塞进篓缝里。林昭把灯提起来。灯钉还弯着，钉尖上的血冻成一点黑。他往崖边走，走到青石旁，弯腰把铁链捡起来。链子冻手，他绕了两圈，扔进石缝。碎冰落下去，崖下没有回声。风从松林里穿过来，药包在雪地上翻了个面。沈鹤年还是没有回头，过期的药还在雪地里。"}, {"no": 18, "chars": 4470, "english": 0, "banned": 0, "title": "隙锤诰六", "level": "炼气初期", "act": "第一幕 · 铁匠之子", "volume": "第1卷 · 人界·痕镜", "head": "崖边的风从石缝里挤上来，一股子烧焦的草灰味。林小满蹲在地上，拿根树枝戳硬土，戳一下骂一句：“破地方，土都跟铁疙瘩一样。”树枝断了。她把断枝甩出去，起身踢了块碎石。碎石滚到崖边，没声了。沈鹤年盘腿坐在一块青石上，面前一盏旧铜灯，灯罩歪着，里头积了半指厚的黑油泥。他从袖口抽出一根细铁签，对准灯罩卡口，使劲撬。铜锈簌簌往下掉，落在他膝盖上。“师父，你拆它做什么。”林昭站在三步外，背靠一棵歪脖子松树，两手拢在袖子里。沈鹤年没抬头。铁签转了个角度。“你说呢。”“灯里有东西。”“未必。”沈鹤年把铁签换了个头，戳进另一道缝，“灯", "tail": "口，弯腰看了看石缝，又看了看林昭的手。他伸手把林昭掌心里剩下的麻绳屑拨掉，拍了拍。“行了。”他转身往旧屋那头走，走了两步又停下，从袖里掏出最后那截湿麻绳，在手里掂了掂。旧屋门板歪着，门缝塞着干草和破布。他伸手把干草扯出两把，把那截麻绳团成一团，塞进门缝里，又把干草塞回去压实。然后他抹了把脸，又把一截麻绳塞进旧屋的缝里。"}]};
+
+function quality(c){
+  if (c.english > 0) return 'bad';
+  if (c.chars < 2800) return 'warn';
+  if (c.banned > 8) return 'warn';
+  return 'ok';
+}
+
+function render(d){
+  DATA = d;
+  const pct = d.target ? d.generated / d.target * 100 : 0;
+  document.querySelector('#sub').textContent =
+    `更新于 ${d.updated}　｜　每章约 4000 字　｜　模型 auto/deepseek-v4.1-flash-max`;
+  document.querySelector('#kGen').textContent = d.generated;
+  document.querySelector('#kPct').textContent = pct.toFixed(1) + '%';
+  document.querySelector('#kChars').textContent =
+    (d.total_chars/10000).toFixed(1) + ' 万';
+  document.querySelector('#kAvg').textContent = d.avg;
+
+  const bad = d.chapters.filter(c => quality(c) !== 'ok').length;
+  document.querySelector('#kBad').textContent = bad;
+  document.querySelector('#kBad').style.color = bad ? 'var(--rose)' : 'var(--emerald)';
+
+  document.querySelector('#fill').style.width = pct + '%';
+  document.querySelector('#proglbl').textContent =
+    `${d.generated} / ${d.target} 章　${(d.total_chars/10000).toFixed(1)} 万字`;
+
+  // 幕进度
+  const acts = {};
+  d.chapters.forEach(c => {
+    if (!acts[c.act]) acts[c.act] = {done:0, chars:0};
+    acts[c.act].done++;
+    acts[c.act].chars += c.chars;
+  });
+  const ACT_TOTAL = {'第一幕 · 铁匠之子':400,'第二幕 · 人界之巅':1200};
+  document.querySelector('#actbars').innerHTML = Object.entries(acts).map(([nm,v])=>{
+    const tot = ACT_TOTAL[nm] || 400;
+    const p = Math.min(100, v.done/tot*100);
+    return `<div class="actbar">
+      <div class="nm">${nm}</div>
+      <div class="tr"><div style="width:${p}%"></div></div>
+      <div class="ct">${v.done}/${tot} 章　${(v.chars/10000).toFixed(1)} 万字</div>
+    </div>`;
+  }).join('');
+
+  // 章节网格
+  const byNo = {};
+  d.chapters.forEach(c => byNo[c.no] = c);
+  let grid = '';
+  for (let i=1; i<=d.target; i++){
+    const c = byNo[i];
+    if (c){
+      const q = quality(c);
+      grid += `<div class="ch ${q==='ok'?'done':q}" title="第${i}章 ${c.chars}字">${i}</div>`;
+    } else {
+      grid += `<div class="ch todo" title="第${i}章 未写">${i}</div>`;
+    }
+  }
+  document.querySelector('#chgrid').innerHTML = grid;
+
+  // 预览：最后一章
+  const last = d.chapters[d.chapters.length-1];
+  if (last){
+    document.querySelector('#ph1').textContent =
+      `第${last.no}章《${last.title}》 ${last.chars} 字`;
+    document.querySelector('#p1').textContent = last.head + '…';
+    document.querySelector('#ph2').textContent = last.level;
+    document.querySelector('#p2').textContent = '…' + last.tail;
+  }
+
+  // 表格（倒序，最新的在前）
+  document.querySelector('#tbody').innerHTML =
+    d.chapters.slice().reverse().map(c=>{
+      const q = quality(c);
+      const cls = q==='ok'?'ok':(q==='bad'?'bad':'warn');
+      const txt = q==='ok'?'合格':(q==='bad'?'英文污染':'字数/套话');
+      return `<tr>
+        <td class="mono">${c.no}</td>
+        <td>${c.title}</td>
+        <td style="color:var(--violet)">${c.level}</td>
+        <td>${c.chars}</td>
+        <td style="color:${c.english?'var(--rose)':'var(--dim)'}">${c.english}</td>
+        <td style="color:${c.banned>8?'var(--amber)':'var(--dim)'}">${c.banned}</td>
+        <td><span class="pill ${cls}">${txt}</span></td>
+        <td style="font-size:10px;color:var(--dim)">${c.act} / ${c.volume}</td>
+      </tr>`;
+    }).join('');
+}
+
+async function tick(){
+  try{
+    const r = await fetch('progress.json?_=' + Date.now());
+    if (r.ok) render(await r.json());
+  }catch(e){ /* 首次打开可能还没有数据 */ }
+}
+tick();
+setInterval(tick, 15000);
+</script>
+</body>
+</html>

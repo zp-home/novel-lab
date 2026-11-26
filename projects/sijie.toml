@@ -1,0 +1,26 @@
+# 四界 —— 示例项目
+# 世界设定预设：four_realm（人界/灵界/仙界/神界，4×9×3=108 级）
+
+[project]
+name = "sijie"
+title = "四界"
+genre = "仙侠"
+logline = "青牛镇打铁的少年，在母亲留下的一面铜镜里发现半道碑印，为了弄清母亲当年为什么把镜子同时押给两家，一步步走进四界的旧账里。"
+style = "webnovel"
+# gemini 全线 429 时切到 deepseek。deepseek 不吃 reasoning_effort（传了更差），
+# 所以 efforts 留空。等 gemini 配额恢复，把下面两行换回去即可：
+#   model = "agy-cli/gemini-4-hydrogen"
+#   efforts = ["medium", "high"]
+model = "auto/deepseek-v4.1-flash-max"
+efforts = []
+chapters = 5000
+words_per_chapter = 3600
+segs = 3
+workers = 3
+world_preset = "four_realm"
+
+[gate]
+max_retries = 2
+# 实测 deepseek 的 reasoning_tokens 不受 max_tokens=5000 限制（仍会跑到 1.9 万），
+# 设太小反而可能在限流/高推理波动时截断正文，保留 14000 保证不被截断。
+max_tokens = 14000

@@ -1,0 +1,814 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>四界 · 长篇小说 Agent 记忆大屏</title>
+<style>
+  :root{
+    --bg:#080b12; --bg2:#0d1220; --panel:#111827; --panel2:#151d2e;
+    --line:#1e293b; --line2:#2a3a52;
+    --txt:#cbd5e1; --txt2:#94a3b8; --dim:#64748b;
+    --cyan:#22d3ee; --blue:#3b82f6; --violet:#a78bfa;
+    --amber:#fbbf24; --rose:#fb7185; --emerald:#34d399;
+    --human:#34d399; --realm1:#60a5fa; --realm2:#a78bfa;
+    --realm3:#fbbf24; --realm4:#fb7185;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    background:var(--bg); color:var(--txt);
+    font-family:-apple-system,"Segoe UI","Microsoft YaHei",sans-serif;
+    font-size:13px; line-height:1.55; overflow-x:hidden;
+  }
+  .wrap{max-width:1680px;margin:0 auto;padding:18px 22px 60px}
+
+  /* ---------- 头部 ---------- */
+  header{
+    display:flex;align-items:flex-end;justify-content:space-between;
+    gap:20px;padding-bottom:16px;margin-bottom:18px;
+    border-bottom:1px solid var(--line);flex-wrap:wrap;
+  }
+  h1{font-size:20px;font-weight:600;letter-spacing:.5px;color:#e2e8f0}
+  h1 span{color:var(--cyan)}
+  .sub{color:var(--dim);font-size:12px;margin-top:3px}
+  .kpis{display:flex;gap:26px;flex-wrap:wrap}
+  .kpi{text-align:right}
+  .kpi .v{font-size:21px;font-weight:600;color:var(--cyan);
+    font-variant-numeric:tabular-nums;line-height:1.1}
+  .kpi .l{font-size:10.5px;color:var(--dim);letter-spacing:.4px}
+
+  /* ---------- 布局 ---------- */
+  .grid{display:grid;gap:14px}
+  .g2{grid-template-columns:1fr 1fr}
+  .g3{grid-template-columns:repeat(3,1fr)}
+  .g-32{grid-template-columns:1.35fr 1fr}
+  @media(max-width:1100px){.g2,.g3,.g-32{grid-template-columns:1fr}}
+
+  .panel{
+    background:linear-gradient(180deg,var(--panel),var(--panel2));
+    border:1px solid var(--line);border-radius:10px;padding:15px 17px;
+    position:relative;overflow:hidden;
+  }
+  .panel::before{
+    content:'';position:absolute;top:0;left:0;right:0;height:1px;
+    background:linear-gradient(90deg,transparent,var(--line2),transparent);
+  }
+  .panel h2{
+    font-size:13px;font-weight:600;color:#e2e8f0;margin-bottom:3px;
+    display:flex;align-items:center;gap:8px;
+  }
+  .panel h2 .tag{
+    font-size:9.5px;font-weight:500;padding:1px 6px;border-radius:3px;
+    background:rgba(34,211,238,.12);color:var(--cyan);
+    letter-spacing:.3px;text-transform:uppercase;
+  }
+  .panel .note{font-size:11px;color:var(--dim);margin-bottom:12px}
+
+  /* ---------- 时间轴 ---------- */
+  .scrub{
+    display:flex;align-items:center;gap:14px;margin-bottom:16px;
+    background:var(--panel);border:1px solid var(--line);
+    border-radius:10px;padding:13px 18px;
+  }
+  .scrub label{font-size:11px;color:var(--dim);white-space:nowrap}
+  input[type=range]{
+    flex:1;-webkit-appearance:none;height:5px;border-radius:3px;
+    background:linear-gradient(90deg,var(--realm1),var(--realm2),var(--realm3),var(--realm4));
+    outline:none;cursor:pointer;
+  }
+  input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none;width:17px;height:17px;border-radius:50%;
+    background:#fff;border:3px solid var(--cyan);cursor:grab;
+    box-shadow:0 0 10px rgba(34,211,238,.6);
+  }
+  .scrub .val{
+    font-size:16px;font-weight:600;color:var(--cyan);
+    font-variant-numeric:tabular-nums;min-width:76px;text-align:right;
+  }
+  .scrub .rm{font-size:11.5px;color:var(--violet);min-width:130px}
+
+  /* ---------- 力量曲线 ---------- */
+  #powerChart{width:100%;height:190px;display:block}
+
+  /* ---------- 存储层卡片 ---------- */
+  .stores{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+  @media(max-width:1300px){.stores{grid-template-columns:repeat(2,1fr)}}
+  .store{
+    background:rgba(30,41,59,.45);border:1px solid var(--line);
+    border-radius:8px;padding:11px 12px;cursor:pointer;
+    transition:.18s;position:relative;
+  }
+  .store:hover{border-color:var(--cyan);background:rgba(34,211,238,.06)}
+  .store.active{border-color:var(--cyan);background:rgba(34,211,238,.1);
+    box-shadow:0 0 0 1px rgba(34,211,238,.3)}
+  .store .nm{font-size:12.5px;font-weight:600;color:#e2e8f0;
+    display:flex;align-items:center;justify-content:space-between;gap:6px}
+  .store .cnt{font-size:10px;color:var(--cyan);font-variant-numeric:tabular-nums}
+  .store .desc{font-size:10.5px;color:var(--dim);margin-top:4px;line-height:1.45}
+  .store .dot{width:6px;height:6px;border-radius:50%;display:inline-block;
+    margin-right:5px;vertical-align:middle}
+  .store .why{font-size:10px;color:var(--amber);margin-top:5px;
+    opacity:0;max-height:0;overflow:hidden;transition:.2s}
+  .store:hover .why,.store.active .why{opacity:1;max-height:40px}
+
+  /* ---------- 大纲 ---------- */
+  .ol-node{margin-bottom:7px;padding-left:11px;border-left:2px solid var(--line2)}
+  .ol-node.act{border-left-color:var(--rose)}
+  .ol-node.vol{border-left-color:var(--amber)}
+  .ol-node.arc{border-left-color:var(--violet)}
+  .ol-node.ch{border-left-color:var(--cyan)}
+  .ol-k{font-size:9.5px;color:var(--dim);text-transform:uppercase;letter-spacing:.4px}
+  .ol-v{font-size:11.5px;color:#e2e8f0;margin-top:1px}
+  .ol-d{font-size:10.5px;color:var(--txt2);margin-top:2px;line-height:1.5}
+  .ol-esc{font-size:10px;color:var(--amber);margin-top:2px}
+
+  .beat-item{display:flex;gap:8px;margin-bottom:7px;align-items:flex-start}
+  .beat-kind{font-size:9px;padding:1px 5px;border-radius:3px;white-space:nowrap;
+    margin-top:1px;font-weight:500}
+  .bk-冲突{background:rgba(251,113,133,.16);color:var(--rose)}
+  .bk-揭示{background:rgba(34,211,238,.16);color:var(--cyan)}
+  .bk-代价{background:rgba(251,191,36,.16);color:var(--amber)}
+  .bk-转折{background:rgba(167,139,250,.16);color:var(--violet)}
+  .beat-txt{font-size:11.5px;color:var(--txt);line-height:1.6}
+
+  .ch-meta{display:flex;gap:14px;flex-wrap:wrap;font-size:10.5px;
+    color:var(--dim);margin-bottom:10px;padding-bottom:9px;
+    border-bottom:1px solid var(--line)}
+  .ch-meta b{color:var(--cyan);font-weight:500}
+  .ch-end{margin-top:9px;padding:8px 10px;border-radius:6px;
+    background:rgba(52,211,153,.07);border:1px solid rgba(52,211,153,.22);
+    font-size:11px;color:var(--emerald)}
+
+  /* ---------- 人物 ---------- */
+  .cast-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:9px}
+  @media(max-width:1400px){.cast-grid{grid-template-columns:repeat(2,1fr)}}
+  .cast-card{
+    background:rgba(30,41,59,.4);border:1px solid var(--line);
+    border-radius:7px;padding:9px 10px;transition:.18s;
+  }
+  .cast-card.present{border-color:rgba(34,211,238,.55);
+    background:rgba(34,211,238,.07);box-shadow:0 0 0 1px rgba(34,211,238,.18)}
+  .cast-card.dead{opacity:.42}
+  .cast-card .hd{display:flex;align-items:baseline;justify-content:space-between;gap:6px}
+  .cast-card .nm{font-size:12.5px;font-weight:600;color:#e2e8f0}
+  .cast-card .rl{font-size:9px;padding:1px 5px;border-radius:3px;
+    background:rgba(167,139,250,.16);color:var(--violet);white-space:nowrap}
+  .cast-card .lv{font-size:11px;color:var(--cyan);margin-top:3px;
+    font-variant-numeric:tabular-nums}
+  .cast-card .vc{font-size:10px;color:var(--dim);margin-top:4px;line-height:1.5}
+  .cast-card .tics{color:var(--amber)}
+  .cast-card .banned{color:var(--rose);opacity:.8}
+  .cast-card .prog{height:3px;background:rgba(30,41,59,.8);border-radius:2px;
+    margin-top:6px;overflow:hidden}
+  .cast-card .prog div{height:100%;background:linear-gradient(90deg,var(--cyan),var(--violet))}
+
+  /* ---------- 事实甘特 ---------- */
+  .gantt{position:relative;margin-top:8px}
+  .gantt-row{
+    display:grid;grid-template-columns:104px 1fr;gap:10px;
+    align-items:center;margin-bottom:3px;height:19px;
+  }
+  .gantt-lbl{font-size:10.5px;color:var(--txt2);text-align:right;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .gantt-track{
+    position:relative;height:14px;background:rgba(30,41,59,.5);
+    border-radius:3px;overflow:hidden;
+  }
+  .gantt-bar{
+    position:absolute;top:2px;height:10px;border-radius:2px;
+    transition:.15s;cursor:pointer;
+  }
+  .gantt-bar:hover{filter:brightness(1.5)}
+  .gantt-bar.imm{border:1px solid rgba(251,113,133,.9)}
+  .gantt-bar.active{outline:1px solid #fff;outline-offset:1px}
+
+  /* ---------- 注入块 ---------- */
+  .inject{
+    background:#060910;border:1px solid var(--line);border-radius:8px;
+    padding:12px 14px;font-family:ui-monospace,"Cascadia Code",monospace;
+    font-size:11px;line-height:1.7;color:#8ba3c7;
+    max-height:400px;overflow:auto;white-space:pre-wrap;
+    word-break:break-all;
+  }
+  .inject .hl-c{color:var(--cyan);font-weight:600}
+  .inject .hl-v{color:var(--violet);font-weight:600}
+  .inject .hl-a{color:var(--amber);font-weight:600}
+  .inject .hl-r{color:var(--rose);font-weight:600}
+  .inject .hl-g{color:var(--emerald)}
+
+  .inject-head{
+    display:flex;justify-content:space-between;align-items:center;
+    margin-bottom:9px;font-size:11px;color:var(--dim);
+  }
+  .budget{display:flex;gap:3px;margin-top:10px;height:7px;border-radius:4px;
+    overflow:hidden;background:rgba(30,41,59,.5)}
+  .budget div{transition:.3s}
+
+  /* ---------- RAG 对比 ---------- */
+  .cmp{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .cmp-box{border-radius:8px;padding:12px 13px;border:1px solid}
+  .cmp-box.bad{border-color:rgba(251,113,133,.4);background:rgba(251,113,133,.06)}
+  .cmp-box.good{border-color:rgba(52,211,153,.4);background:rgba(52,211,153,.06)}
+  .cmp-box h3{font-size:11.5px;font-weight:600;margin-bottom:7px}
+  .cmp-box.bad h3{color:var(--rose)}
+  .cmp-box.good h3{color:var(--emerald)}
+  .cmp-box ul{list-style:none;font-size:11px;line-height:1.75;color:var(--txt2)}
+  .cmp-box li{padding-left:13px;position:relative}
+  .cmp-box li::before{content:'·';position:absolute;left:3px;
+    color:var(--dim);font-weight:700}
+
+  /* ---------- 表格 ---------- */
+  table{width:100%;border-collapse:collapse;font-size:11px}
+  th{
+    text-align:left;padding:6px 9px;color:var(--dim);font-weight:500;
+    border-bottom:1px solid var(--line);font-size:10px;
+    text-transform:uppercase;letter-spacing:.4px;
+  }
+  td{padding:5px 9px;border-bottom:1px solid rgba(30,41,59,.5);
+    color:var(--txt2);font-variant-numeric:tabular-nums}
+  tr:last-child td{border-bottom:none}
+  tr:hover td{background:rgba(34,211,238,.04)}
+  td.mono{font-family:ui-monospace,monospace;font-size:10.5px}
+
+  .pill{display:inline-block;padding:1px 6px;border-radius:3px;
+    font-size:9.5px;font-weight:500}
+  .pill.imm{background:rgba(251,113,133,.15);color:var(--rose)}
+  .pill.mut{background:rgba(34,211,238,.15);color:var(--cyan)}
+  .pill.ok{background:rgba(52,211,153,.15);color:var(--emerald)}
+  .pill.due{background:rgba(251,191,36,.15);color:var(--amber)}
+  .pill.od{background:rgba(251,113,133,.2);color:var(--rose)}
+
+  /* ---------- 卷/弧 ---------- */
+  .ladder{display:flex;flex-direction:column;gap:7px}
+  .lvl{display:flex;align-items:center;gap:10px}
+  .lvl .k{width:66px;font-size:10.5px;color:var(--dim);text-align:right}
+  .lvl .bar{flex:1;height:22px;border-radius:4px;display:flex;
+    align-items:center;padding:0 9px;font-size:10.5px;font-weight:500;
+    color:#0b1220;white-space:nowrap;overflow:hidden}
+  .lvl .meta{width:126px;font-size:10px;color:var(--dim);
+    font-variant-numeric:tabular-nums}
+
+  ::-webkit-scrollbar{width:7px;height:7px}
+  ::-webkit-scrollbar-track{background:transparent}
+  ::-webkit-scrollbar-thumb{background:var(--line2);border-radius:4px}
+  ::-webkit-scrollbar-thumb:hover{background:#3b4d6b}
+
+  .fadein{animation:fi .3s ease}
+  @keyframes fi{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <div>
+    <h1>四界 · 长篇小说 Agent <span>记忆与状态大屏</span></h1>
+    <div class="sub">5000 章 × 4000 字 = 2000 万字｜拖动时间轴，看 Agent 在第 N 章「记得什么、注入什么」</div>
+  </div>
+  <div class="kpis">
+    <div class="kpi"><div class="v" id="kCh">5000</div><div class="l">总章数</div></div>
+    <div class="kpi"><div class="v" id="kLv">108</div><div class="l">境界阶数</div></div>
+    <div class="kpi"><div class="v" id="kEnt">6</div><div class="l">人物实体</div></div>
+    <div class="kpi"><div class="v" id="kFact">30</div><div class="l">事实条目</div></div>
+    <div class="kpi"><div class="v" id="kInj">1.9K</div><div class="l">每章注入字符</div></div>
+  </div>
+</header>
+
+<!-- 时间轴 -->
+<div class="scrub">
+  <label>章号</label>
+  <input type="range" id="scrub" min="1" max="5000" value="1" step="1">
+  <div class="val" id="scrubVal">1</div>
+  <div class="rm" id="scrubRealm">人界 · 炼气初期</div>
+  <label style="margin-left:8px">快捷</label>
+  <div style="display:flex;gap:5px">
+    <button class="jump" data-ch="1">开篇</button>
+    <button class="jump" data-ch="1601">入灵界</button>
+    <button class="jump" data-ch="2100">断臂</button>
+    <button class="jump" data-ch="3001">飞升仙界</button>
+    <button class="jump" data-ch="4201">入神界</button>
+    <button class="jump" data-ch="4953">终局</button>
+  </div>
+</div>
+
+<div class="grid g-32" style="margin-bottom:14px">
+  <!-- 力量曲线 -->
+  <div class="panel">
+    <h2>① 世界观：108 阶战力曲线 <span class="tag">world.json · 只读</span></h2>
+    <div class="note">绝对战力全书单调递增，但<b style="color:var(--amber)">界内地位 rank 每界重置</b>——这是防止 5000 章数字爆炸的核心机制</div>
+    <canvas id="powerChart"></canvas>
+    <div style="display:flex;gap:16px;margin-top:8px;font-size:10px;color:var(--dim);flex-wrap:wrap">
+      <span><span class="dot" style="background:var(--realm1)"></span>人界 1-1600</span>
+      <span><span class="dot" style="background:var(--realm2)"></span>灵界 1601-3000</span>
+      <span><span class="dot" style="background:var(--realm3)"></span>仙界 3001-4200</span>
+      <span><span class="dot" style="background:var(--realm4)"></span>神界 4201-5000</span>
+      <span style="margin-left:auto;color:var(--cyan)">白线 = 当前章位置</span>
+    </div>
+  </div>
+
+  <!-- 层级 -->
+  <div class="panel">
+    <h2>② 三级滚动大纲 <span class="tag">outline.json</span></h2>
+    <div class="note">只细化到「接下来要写的这一段」，上层已定死，下层按需展开</div>
+    <div class="ladder" id="ladder"></div>
+    <div style="margin-top:12px;font-size:10.5px;color:var(--dim);line-height:1.7">
+      <div>· <b style="color:var(--txt2)">全书总纲</b> 1 次生成，只给脊柱，不给细节</div>
+      <div>· <b style="color:var(--txt2)">卷纲</b> 100 卷，开写该卷时才规划</div>
+      <div>· <b style="color:var(--txt2)">弧纲</b> 500 弧，开写该弧时才规划</div>
+      <div>· <b style="color:var(--txt2)">章纲</b> 5000 章，开写该章时才规划</div>
+    </div>
+  </div>
+</div>
+
+<!-- 存储层 -->
+<div class="panel" style="margin-bottom:14px">
+  <h2>③ Agent 到底存了什么 <span class="tag">7 个存储层</span></h2>
+  <div class="note">点击任意层，下方会显示它在这一章的实际内容。注意：<b style="color:var(--cyan)">每层的大小都与章节号无关</b></div>
+  <div class="stores" id="stores"></div>
+</div>
+
+<div class="grid g2" style="margin-bottom:14px">
+  <!-- 人物 -->
+<div class="panel" style="margin-bottom:14px">
+  <h2>③·五 人物体系 <span class="tag">cast.json · 半硬</span></h2>
+  <div class="note">境界轨迹与声纹是结构化的（防 5000 章漂移），弧光交给大纲层。当前章在场的角色按境界排序</div>
+  <div id="castGrid" class="cast-grid"></div>
+</div>
+
+<!-- 事实甘特 -->
+  <div class="panel">
+    <h2>④ 时序事实台账 <span class="tag">canon.json · facts</span></h2>
+    <div class="note">每条事实带<b style="color:var(--cyan)">有效期</b>。第 3000 章查「右臂」得到「已愈」，第 2200 章得到「断」——这是 RAG 做不到的</div>
+    <div class="gantt" id="gantt"></div>
+    <div style="display:flex;gap:14px;margin-top:10px;font-size:10px;color:var(--dim)">
+      <span><span class="pill imm">不可变</span> 全书不能改</span>
+      <span><span class="pill mut">可变</span> 有有效期区间</span>
+    </div>
+  </div>
+
+  <!-- 伏笔 -->
+  <div class="panel">
+    <h2>⑤ 伏笔账本 <span class="tag">foreshadows</span></h2>
+    <div class="note">第 100 章埋的伏笔，第 3000 章才回收——<b style="color:var(--rose)">跨 2900 章的承诺</b></div>
+    <table id="fsTable">
+      <thead><tr><th>ID</th><th>内容</th><th>埋设</th><th>回收窗口</th><th>状态</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- 四层大纲详情 -->
+<div class="grid g2" style="margin-bottom:14px">
+  <div class="panel">
+    <h2>⑤·五 四层大纲 <span class="tag">outline_full.json</span></h2>
+    <div class="note">全书 1 幕 → 100 卷 → 500 弧 → 5000 章。上层已定死，下层确定性展开</div>
+    <div id="outlineTree"></div>
+  </div>
+  <div class="panel">
+    <h2>⑤·六 本章大纲 <span class="tag">chapter outline</span></h2>
+    <div class="note">这一章要写的 4 个 beat。模型只执行，不规划</div>
+    <div id="chOutline"></div>
+  </div>
+</div>
+
+<!-- 注入 -->
+<div class="panel" style="margin-bottom:14px">
+  <h2>⑥ 第 <span id="injCh" style="color:var(--cyan)">1</span> 章实际注入给模型的上下文 <span class="tag">ContextBuilder.build()</span></h2>
+  <div class="inject-head">
+    <span id="injSize">—</span>
+    <span>这块内容<b style="color:var(--emerald)">大小恒定</b>，不随章节号增长</span>
+  </div>
+  <div class="budget" id="budget"></div>
+  <div class="inject" id="inject" style="margin-top:11px"></div>
+</div>
+
+<!-- RAG 对比 -->
+<div class="panel">
+  <h2>⑦ 为什么这不是 RAG</h2>
+  <div class="note">这是最容易被误解的一点。两者解决的是完全不同的问题</div>
+  <div class="cmp">
+    <div class="cmp-box bad">
+      <h3>❌ RAG（向量检索）的做法</h3>
+      <ul>
+        <li>把前文切片、embedding、存向量库</li>
+        <li>写第 N 章时用「相似度」检索相关片段</li>
+        <li><b style="color:var(--rose)">检索是模糊的</b>：要查"右臂现在怎么样"，可能召回三章前的旧状态</li>
+        <li><b style="color:var(--rose)">没有"当前值"概念</b>：摘要说"受过伤"，但给不出"现在好了没有"</li>
+        <li><b style="color:var(--rose)">5000 章后向量库有百万切片</b>，召回质量持续下降</li>
+        <li><b style="color:var(--rose)">无法校验</b>：检索结果对不对，只能靠模型自己判断</li>
+      </ul>
+    </div>
+    <div class="cmp-box good">
+      <h3>✅ 本架构（时序正典台账）</h3>
+      <ul>
+        <li>事实存成<b style="color:var(--emerald)">结构化记录</b>，带有效期区间</li>
+        <li>写第 N 章时<b style="color:var(--emerald)">精确查询</b>：<code>state_at(entity, N)</code></li>
+        <li><b style="color:var(--emerald)">查询是确定的</b>：第 2200 章必得"断"，第 3000 章必得"已愈"</li>
+        <li><b style="color:var(--emerald)">有"当前值"</b>：返回的永远是当时有效的值</li>
+        <li><b style="color:var(--emerald)">5000 章后查询成本不变</b>，因为只查在场实体</li>
+        <li><b style="color:var(--emerald)">可自动校验</b>：冲突在写入时就报错</li>
+      </ul>
+    </div>
+  </div>
+  <div style="margin-top:12px;padding:11px 13px;border-radius:7px;
+    background:rgba(251,191,36,.07);border:1px solid rgba(251,191,36,.25);
+    font-size:11.5px;color:var(--txt2);line-height:1.7">
+    <b style="color:var(--amber)">一句话区别：</b>
+    RAG 是「<b>找相似的</b>」，本架构是「<b>查当时是什么</b>」。
+    写小说需要的不是相似片段，是<b style="color:var(--cyan)">确切的事实状态</b>——
+    主角现在什么境界、右手好了没有、跟谁是盟友。这些必须<b>精确</b>，不能靠相似度。
+  </div>
+</div>
+
+</div>
+
+<script>
+const D = __DATA__;
+
+// ---------- 工具 ----------
+const $ = s => document.querySelector(s);
+const fmt = n => n.toLocaleString('en-US');
+const REALM_COLOR = {"人界":"var(--realm1)","灵界":"var(--realm2)",
+                     "仙界":"var(--realm3)","神界":"var(--realm4)"};
+const REALM_HEX = {"人界":"#60a5fa","灵界":"#a78bfa",
+                   "仙界":"#fbbf24","神界":"#fb7185"};
+
+// 探测章 -> 数据
+const PROBE = {};
+D.probes.forEach(p => PROBE[p.chapter] = p);
+const PROBE_KEYS = D.probes.map(p => p.chapter).sort((a,b)=>a-b);
+
+function nearestProbe(ch){
+  let best = PROBE_KEYS[0], bd = Infinity;
+  for(const k of PROBE_KEYS){
+    const d = Math.abs(k-ch);
+    if(d < bd){bd=d; best=k;}
+  }
+  return best;
+}
+
+// 从 108 阶里查当前境界（精确，不靠探测）
+function levelAt(ch){
+  for(const lv of D.world.levels){
+    if(ch >= lv.s && ch <= lv.e) return lv;
+  }
+  return D.world.levels[D.world.levels.length-1];
+}
+function realmAt(ch){
+  const lv = levelAt(ch);
+  return D.world.realms.find(r => r.name === lv.realm) || D.world.realms[0];
+}
+
+// ---------- KPI ----------
+$('#kCh').textContent = fmt(D.total_chapters);
+$('#kLv').textContent = D.stats.levels;
+$('#kEnt').textContent = D.stats.entities;
+$('#kFact').textContent = D.stats.facts;
+const injMin = Math.min(...D.probes.map(p=>p.inject_chars));
+const injMax = Math.max(...D.probes.map(p=>p.inject_chars));
+$('#kInj').textContent = (injMin/1000).toFixed(1)+'K';
+
+// ---------- 力量曲线 ----------
+const cv = $('#powerChart');
+function drawPower(){
+  const dpr = window.devicePixelRatio || 1;
+  const w = cv.clientWidth, h = 190;
+  cv.width = w*dpr; cv.height = h*dpr;
+  const ctx = cv.getContext('2d');
+  ctx.scale(dpr,dpr);
+  ctx.clearRect(0,0,w,h);
+
+  const pad = {l:52,r:14,t:12,b:22};
+  const iw = w-pad.l-pad.r, ih = h-pad.t-pad.b;
+  const N = D.total_chapters;
+  const maxP = Math.log10(D.world.levels[D.world.levels.length-1].power);
+  const minP = 0;
+  const X = ch => pad.l + (ch-1)/(N-1)*iw;
+  const Y = p => pad.t + ih - (Math.log10(Math.max(1,p))-minP)/(maxP-minP)*ih;
+
+  // 网格 + Y 轴
+  ctx.font = '9px ui-monospace,monospace';
+  ctx.fillStyle = '#475569';
+  for(let e=0; e<=maxP; e+=3){
+    const y = pad.t + ih - (e-minP)/(maxP-minP)*ih;
+    ctx.strokeStyle = 'rgba(30,41,59,.7)';
+    ctx.beginPath(); ctx.moveTo(pad.l,y); ctx.lineTo(w-pad.r,y); ctx.stroke();
+    ctx.fillText('1e'+e, 8, y+3);
+  }
+  // X 轴章号
+  [1,1601,3001,4201,5000].forEach(c=>{
+    ctx.fillStyle='#475569';
+    ctx.fillText(c, X(c)-12, h-6);
+  });
+
+  // 每界填充
+  D.world.realms.forEach(r=>{
+    const x0=X(r.start), x1=X(r.end);
+    ctx.fillStyle = REALM_HEX[r.name]+'14';
+    ctx.fillRect(x0, pad.t, x1-x0, ih);
+    ctx.fillStyle = REALM_HEX[r.name];
+    ctx.font = '10px sans-serif';
+    ctx.fillText(r.name, x0+6, pad.t+13);
+    ctx.font = '9px ui-monospace,monospace';
+  });
+
+  // 战力曲线
+  ctx.beginPath();
+  D.world.levels.forEach((lv,i)=>{
+    const x = X((lv.s+lv.e)/2), y = Y(lv.power);
+    i===0 ? ctx.moveTo(x,y) : ctx.lineTo(x,y);
+  });
+  ctx.strokeStyle = '#22d3ee'; ctx.lineWidth = 1.8;
+  ctx.shadowColor='rgba(34,211,238,.5)'; ctx.shadowBlur=6;
+  ctx.stroke(); ctx.shadowBlur=0;
+
+  // 界内 rank（锯齿，虚线）
+  ctx.beginPath();
+  D.world.levels.forEach((lv,i)=>{
+    const x = X((lv.s+lv.e)/2);
+    const y = pad.t + ih - lv.rank*ih;
+    i===0 ? ctx.moveTo(x,y) : ctx.lineTo(x,y);
+  });
+  ctx.strokeStyle = 'rgba(251,191,36,.55)'; ctx.lineWidth = 1.2;
+  ctx.setLineDash([3,3]); ctx.stroke(); ctx.setLineDash([]);
+
+  // 当前章位置
+  const ch = +$('#scrub').value;
+  const x = X(ch);
+  ctx.strokeStyle='rgba(255,255,255,.85)'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(x,pad.t); ctx.lineTo(x,pad.t+ih); ctx.stroke();
+  const lv = levelAt(ch);
+  ctx.beginPath();
+  ctx.arc(x, Y(lv.power), 4, 0, Math.PI*2);
+  ctx.fillStyle='#fff'; ctx.fill();
+  ctx.strokeStyle='#22d3ee'; ctx.lineWidth=2; ctx.stroke();
+}
+window.addEventListener('resize', drawPower);
+
+// ---------- 三级大纲 ----------
+function renderLadder(ch){
+  const perVol = 50, perArc = 10;
+  const vol = Math.floor((ch-1)/perVol)+1;
+  const arc = Math.floor(((ch-1)%perVol)/perArc)+1;
+  const rows = [
+    {k:'全书', v:'《四界》', w:100, c:'#0ea5e9', meta:'1 次生成 · 脊柱'},
+    {k:'卷', v:'第 '+vol+' 卷', w:100, c:'#22d3ee',
+     meta:'第 '+((vol-1)*perVol+1)+'~'+Math.min(vol*perVol,5000)+' 章'},
+    {k:'弧', v:'第 '+vol+' 卷第 '+arc+' 弧', w:72, c:'#a78bfa',
+     meta:'10 章'},
+    {k:'章', v:'第 '+ch+' 章', w:44, c:'#fbbf24', meta:'4000 字'},
+  ];
+  $('#ladder').innerHTML = rows.map(r=>`
+    <div class="lvl">
+      <div class="k">${r.k}</div>
+      <div class="bar" style="width:${r.w}%;background:linear-gradient(90deg,${r.c},${r.c}88)">${r.v}</div>
+      <div class="meta">${r.meta}</div>
+    </div>`).join('');
+}
+
+// ---------- 存储层 ----------
+const STORES = [
+  {id:'world', nm:'世界观', cnt:D.stats.levels+' 阶', dot:'#60a5fa',
+   desc:'四界 · 36 大境界 · 108 小阶 · 灵根 · 法宝 · 丹药',
+   why:'硬编码，模型无权修改。注入时只给当前界+当前阶+下一阶'},
+  {id:'outline', nm:'大纲树', cnt:'4 层', dot:'#22d3ee',
+   desc:'总纲 / 卷纲 / 弧纲 / 章纲，滚动细化',
+   why:'只细化到"接下来要写的这一段"，上层已定死'},
+  {id:'entity', nm:'人物实体', cnt:D.stats.entities+' 人', dot:'#a78bfa',
+   desc:'姓名 · 别名 · 声纹（语气/口头禅/绝不说）',
+   why:'声纹防 5000 章人物说话方式漂移'},
+  {id:'fact', nm:'时序事实', cnt:D.stats.facts+' 条', dot:'#34d399',
+   desc:'带有效期区间。第 2200 章查右臂=断，第 3000 章=已愈',
+   why:'这是整个架构的地基，RAG 替代不了'},
+  {id:'numeric', nm:'数值曲线', cnt:'3 条', dot:'#fbbf24',
+   desc:'战力/等级随章节的插值曲线',
+   why:'防战力膨胀失控，写作时强制落在曲线上'},
+  {id:'foreshadow', nm:'伏笔账本', cnt:D.stats.foreshadows+' 条', dot:'#fb7185',
+   desc:'埋设章 / 回收窗口 / 权重',
+   why:'跨 2900 章的承诺，逾期自动报警'},
+  {id:'timeline', nm:'时间线', cnt:D.canon.timeline.length+' 点', dot:'#94a3b8',
+   desc:'故事内时间（不是章号）',
+   why:'防止第 3000 章倒退回第 2 天'},
+  {id:'chapter', nm:'章节正文', cnt:'5000 篇', dot:'#64748b',
+   desc:'每章 4000 字，落盘可断点续跑',
+   why:'只取上一章最后 400 字用于衔接，其余不注入'},
+];
+
+function renderStores(ch){
+  $('#stores').innerHTML = STORES.map((s,i)=>`
+    <div class="store" data-i="${i}">
+      <div class="nm"><span><span class="dot" style="background:${s.dot}"></span>${s.nm}</span>
+        <span class="cnt">${s.cnt}</span></div>
+      <div class="desc">${s.desc}</div>
+      <div class="why">↳ ${s.why}</div>
+    </div>`).join('');
+  document.querySelectorAll('.store').forEach(el=>{
+    el.onclick = ()=>{
+      document.querySelectorAll('.store').forEach(x=>x.classList.remove('active'));
+      el.classList.add('active');
+    };
+  });
+}
+
+// ---------- 四层大纲 ----------
+function renderOutlineTree(ch){
+  const el = document.querySelector('#outlineTree');
+  if(!el) return;
+  const pr = PROBE[nearestProbe(ch)];
+  if(!pr || !pr.act) { el.innerHTML = '<div class="ol-d">无数据</div>'; return; }
+  const a = pr.act, v = pr.volume, ar = pr.arc, c = pr.chapter_outline;
+  el.innerHTML = `
+    <div class="ol-node act">
+      <div class="ol-k">第 ${a.no} 幕 / 全书总纲</div>
+      <div class="ol-v">${a.name}</div>
+      <div class="ol-d">冲突：${a.conflict}</div>
+      <div class="ol-d">不可逆：${a.irreversible}</div>
+      <div class="ol-esc">升级：${a.escalates}</div>
+    </div>
+    <div class="ol-node vol">
+      <div class="ol-k">第 ${v.no} 卷 / 卷纲（第 ${v.start}~${v.end} 章）</div>
+      <div class="ol-v">${v.name}</div>
+      <div class="ol-d">${v.goal}</div>
+      <div class="ol-esc">${v.escalates}</div>
+    </div>
+    <div class="ol-node arc">
+      <div class="ol-k">第 ${ar.no} 弧 / 弧纲（第 ${ar.start}~${ar.end} 章）</div>
+      <div class="ol-v">${ar.name}</div>
+      <div class="ol-d">${ar.goal}</div>
+      <div class="ol-esc">${ar.escalates}</div>
+    </div>
+    <div class="ol-node ch">
+      <div class="ol-k">第 ${c.no} 章 / 章纲</div>
+      <div class="ol-v">《${c.title}》</div>
+      <div class="ol-d">${c.goal}</div>
+    </div>`;
+}
+
+function renderChapterOutline(ch){
+  const el = document.querySelector('#chOutline');
+  if(!el) return;
+  const pr = PROBE[nearestProbe(ch)];
+  const c = pr && pr.chapter_outline;
+  if(!c){ el.innerHTML = '<div class="ol-d">无数据</div>'; return; }
+  const beats = c.beats.map(b =>
+    `<div class="beat-item">
+       <span class="beat-kind bk-${b.kind}">${b.kind}</span>
+       <span class="beat-txt">${b.text}</span>
+     </div>`).join('');
+  el.innerHTML = `
+    <div class="ch-meta">
+      <span>章号 <b>${c.no}</b></span>
+      <span>境界 <b>${c.level}</b></span>
+      <span>字数 <b>${c.words}</b></span>
+      <span>转折 <b>${c.turn}</b></span>
+    </div>
+    ${beats}
+    <div class="ch-end">本章必须停在这里：${c.ends_with}</div>`;
+}
+
+// ---------- 人物 ----------
+function renderCast(ch){
+  const grid = document.querySelector('#castGrid');
+  if(!grid) return;
+  const rows = (D.cast || []).map(c=>{
+    const present = c.first_appear <= ch
+                 && (c.last_appear === null || ch <= c.last_appear);
+    const appeared = c.first_appear <= ch;
+    const dead = c.last_appear !== null && ch > c.last_appear;
+    // 当前境界：取最后一个 <= ch 的里程碑
+    let lv = null;
+    for(const m of c.milestones){
+      if(m.chapter <= ch) lv = m; else break;
+    }
+    const lvName = lv ? lv.level : '未登场';
+    const lvIdx = lv ? lv.level_index : 0;
+    const pct = lvIdx / 108 * 100;
+    const v = c.voice || {};
+    const tics = (v['口头禅'] || []).join('/');
+    const banned = (v['禁用词'] || []).join('/');
+    return `<div class="cast-card ${present?'present':''} ${dead?'dead':''}">
+      <div class="hd">
+        <span class="nm">${c.name}</span>
+        <span class="rl">${c.role}</span>
+      </div>
+      <div class="lv">${appeared ? lvName : '第 '+c.first_appear+' 章登场'}
+        <span style="color:var(--dim);font-size:9.5px">
+          ${appeared && lv ? '（第 '+lvIdx+'/108 阶）' : ''}</span></div>
+      <div class="vc">${v['语气'] || ''}</div>
+      <div class="vc">口头禅 <span class="tics">${tics || '—'}</span></div>
+      <div class="vc">绝不说 <span class="banned">${banned || '—'}</span></div>
+      <div class="prog"><div style="width:${pct}%"></div></div>
+    </div>`;
+  }).join('');
+  grid.innerHTML = rows;
+}
+
+// ---------- 事实甘特 ----------
+function renderGantt(ch){
+  const N = D.total_chapters;
+  const rows = D.canon.facts.filter(f=>f.from <= 5000).slice(0,18);
+  const X = c => (c-1)/(N-1)*100;
+  $('#gantt').innerHTML = rows.map(f=>{
+    const to = f.to === null ? N : f.to;
+    const l = X(f.from), w = Math.max(0.4, X(to)-X(f.from));
+    const active = (ch>=f.from && ch<=(f.to===null?N:f.to));
+    const col = f.immutable ? '#fb7185'
+              : (active ? '#22d3ee' : '#3b82f6');
+    const op = active ? 1 : 0.35;
+    const ent = D.canon.entities.find(e=>e.id===f.entity);
+    const nm = ent ? ent.name : f.entity;
+    return `<div class="gantt-row">
+      <div class="gantt-lbl" title="${nm}.${f.key}">${nm}.${f.key}</div>
+      <div class="gantt-track">
+        <div class="gantt-bar ${f.immutable?'imm':''} ${active?'active':''}"
+          style="left:${l}%;width:${w}%;background:${col};opacity:${op}"
+          title="${f.key} = ${f.value}&#10;第 ${f.from} 章 ~ ${f.to===null?'至今':'第 '+f.to+' 章'}"></div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ---------- 伏笔表 ----------
+function renderForeshadow(ch){
+  const tb = $('#fsTable tbody');
+  tb.innerHTML = D.canon.foreshadows.map(f=>{
+    let st, cls;
+    if(ch > f.hi){ st='逾期'; cls='od'; }
+    else if(ch >= f.lo){ st='应回收'; cls='due'; }
+    else if(ch >= f.planted){ st='已埋'; cls='mut'; }
+    else { st='未埋'; cls=''; }
+    return `<tr>
+      <td class="mono">${f.id}</td>
+      <td style="font-size:10.5px">${f.content}</td>
+      <td class="mono">${f.planted}</td>
+      <td class="mono">${f.lo}~${f.hi}</td>
+      <td><span class="pill ${cls}">${st}</span></td>
+    </tr>`;
+  }).join('');
+}
+
+// ---------- 注入块 ----------
+function renderInject(ch){
+  const p = PROBE[nearestProbe(ch)];
+  $('#injCh').textContent = ch;
+  $('#injSize').textContent =
+    `实际注入 ${p.inject_chars} 字符 ≈ ${Math.round(p.inject_chars/2)} tokens`;
+  $('#injSize').style.color = 'var(--cyan)';
+
+  // 预算条（按段落长度估算比例）
+  const block = p.inject_block;
+  const parts = [
+    {n:'力量体系', c:'#60a5fa', w:250},
+    {n:'世界状态', c:'#34d399', w:520},
+    {n:'卷/弧目标', c:'#22d3ee', w:180},
+    {n:'本章大纲', c:'#a78bfa', w:220},
+    {n:'上章结尾', c:'#fbbf24', w:200},
+    {n:'写作契约', c:'#fb7185', w:600},
+  ];
+  const tot = parts.reduce((a,b)=>a+b.w,0);
+  $('#budget').innerHTML = parts.map(x=>
+    `<div style="width:${x.w/tot*100}%;background:${x.c}"
+      title="${x.n} ~${x.w} 字符"></div>`).join('');
+
+  // 高亮
+  let h = block
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/(【[^】]*】)/g, '<span class="hl-c">$1</span>')
+    .replace(/(当前境界：[^\n]*)/g, '<span class="hl-v">$1</span>')
+    .replace(/(下一阶：[^\n]*)/g, '<span class="hl-v">$1</span>')
+    .replace(/(即将到期的伏笔)/g, '<span class="hl-a">$1</span>')
+    .replace(/(逾期未回收[^\n】]*)/g, '<span class="hl-r">$1</span>')
+    .replace(/(▸ [^\n]*)/g, '<span class="hl-g">$1</span>');
+  $('#inject').innerHTML = h;
+}
+
+// ---------- 主更新 ----------
+function update(){
+  const ch = +$('#scrub').value;
+  const lv = levelAt(ch);
+  const rm = realmAt(ch);
+
+  $('#scrubVal').textContent = fmt(ch);
+  $('#scrubRealm').textContent = lv.realm + ' · ' + lv.name;
+  $('#scrubRealm').style.color = REALM_HEX[lv.realm];
+
+  drawPower();
+  renderLadder(ch);
+  renderCast(ch);
+  renderOutlineTree(ch);
+  renderChapterOutline(ch);
+  renderGantt(ch);
+  renderForeshadow(ch);
+  renderInject(ch);
+}
+
+$('#scrub').addEventListener('input', update);
+document.querySelectorAll('.jump').forEach(b=>{
+  b.onclick = ()=>{ $('#scrub').value = b.dataset.ch; update(); };
+});
+
+renderStores(1);
+update();
+</script>
+</body>
+</html>
